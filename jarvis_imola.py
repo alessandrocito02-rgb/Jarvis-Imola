@@ -107,6 +107,11 @@ def check_ticketone_direct():
     return False, ""
 
 def main():
+
+    # --- RIGA DI TEST DA AGGIUNGERE ---
+    send_notification("Test Jarvis", "Test funzionante", "https://google.com")
+    # ----------------------------------
+    
     state = load_state()
     new_seen = set(state["seen"])
     any_new_alert = False
