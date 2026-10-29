@@ -117,7 +117,7 @@ def analyze_with_jarvis(title, summary):
     }}
     """
     
-    modelli_da_provare = ["gemini-1.5-flash", "gemini-1.5-flash-8b"]
+    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite"]
     
     for nome_modello in modelli_da_provare:
         try:
