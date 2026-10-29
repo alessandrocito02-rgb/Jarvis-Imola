@@ -67,14 +67,14 @@ def analyze_with_jarvis(title, summary):
 
     Rispondi ESCLUSIVAMENTE in JSON:
     {{
-        "notify": true,
-        "urgency": "ALTA",
+        "notify": true/false,
+        "urgency": "ALTA" o "MEDIA",
         "short_message": "Riassunto chiaro in italiano (max 2 righe)"
     }}
     """
     try:
         response = client.models.generate_content(
-            model="gemini-3.8-flash",
+            model="gemini-2.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json"
@@ -94,7 +94,7 @@ def check_ticketone_direct():
     try:
         resp = requests.get(search_url, headers=headers, timeout=3)
         print(f"TicketOne HTTP Status: {resp.status_code}")
-
+        
         if resp.status_code == 200:
             text = resp.text.lower()
             print("TicketOne: risposta 200 OK ricevuta.")
@@ -107,10 +107,11 @@ def check_ticketone_direct():
     return False, ""
 
 def main():
-    # --- RIGA DI TEST (puoi cancellarla o commentarla con # quando hai finito i test) ---
-    send_notification("Test Jarvis", "Test funzionante", "https://google.com")
-    # ------------------------------------------------------------------------------------
 
+    # --- RIGA DI TEST DA AGGIUNGERE ---
+    send_notification("Test Jarvis", "Test funzionante", "https://google.com")
+    # ----------------------------------
+    
     state = load_state()
     new_seen = set(state["seen"])
     any_new_alert = False
