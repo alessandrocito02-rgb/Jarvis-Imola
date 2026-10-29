@@ -137,10 +137,26 @@ def main():
 
     # 2. Controllo Feed RSS con Gemini
     print("Controllo Feed RSS con Jarvis...")
+    
+    # Imposta il limite: scarta articoli più vecchi di 2 giorni (48 ore) fa rispetto a ora
+    time_limit = datetime.now(timezone.utc) - timedelta(days=2)
+
     for rss_url in RSS_URLS:
         feed = feedparser.parse(rss_url)
         for entry in feed.entries[:5]:
             article_id = entry.link
+            
+            # --- NUOVO CONTROLLO DATA ---
+            # Verifica che il feed abbia una data di pubblicazione
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                # Converte il formato data del feed in un formato confrontabile (UTC)
+                article_date = datetime.fromtimestamp(time.mktime(entry.published_parsed), tz=timezone.utc)
+                
+                if article_date < time_limit:
+                    print(f"Scartato (Troppo vecchio): {entry.title}")
+                    continue # Salta e passa al prossimo articolo
+            # ----------------------------
+
             if article_id in new_seen:
                 continue
 
