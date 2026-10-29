@@ -80,7 +80,7 @@ def analyze_with_jarvis(title, summary):
         "short_message": "Riassunto chiaro in italiano (max 2 righe)"
     }}
     """
-    # Lista di fallback (dal migliore al più leggero/disponibile)
+    
     modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"]
     
     for nome_modello in modelli_da_provare:
@@ -92,10 +92,13 @@ def analyze_with_jarvis(title, summary):
                     response_mime_type="application/json"
                 )
             )
-        return json.loads(response.text)
-    except Exception as e:
-        print(f"Errore analisi IA: {e}")
-        return {"notify": False}
+            return json.loads(response.text)
+        except Exception as e:
+            print(f"Modello {nome_modello} irraggiungibile ({e}), passo al successivo...")
+            time.sleep(1)
+            
+    print("Tutti i modelli sono attualmente sovraccarichi.")
+    return {"notify": False}
 
 def generate_daily_summary(daily_log):
     """Chiede a Gemini di riassumere le ultime ore in modo discorsivo"""
