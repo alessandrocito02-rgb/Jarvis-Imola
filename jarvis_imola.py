@@ -2,6 +2,8 @@ import json
 import os
 import feedparser
 import requests
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from google import genai
 from google.genai import types
 
@@ -17,15 +19,30 @@ RSS_URLS = [
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
-def load_seen():
+def load_state():
+    """Carica lo stato salvato (articoli visti e data ultimo report serale)"""
     if os.path.exists(SEEN_FILE):
-        with open(SEEN_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
+        try:
+            with open(SEEN_FILE, "r") as f:
+                data = json.load(f)
+                # Gestione retrocompatibilità se il file conteneva solo una lista
+                if isinstance(data, list):
+                    return {"seen": set(data), "last_daily_report": ""}
+                return {
+                    "seen": set(data.get("seen", [])),
+                    "last_daily_report": data.get("last_daily_report", "")
+                }
+        except Exception as e:
+            print(f"Errore lettura file memoria: {e}")
+    return {"seen": set(), "last_daily_report": ""}
 
-def save_seen(seen_set):
+def save_state(state):
+    """Salva lo stato aggiornato"""
     with open(SEEN_FILE, "w") as f:
-        json.dump(list(seen_set), f, indent=2)
+        json.dump({
+            "seen": list(state["seen"]),
+            "last_daily_report": state["last_daily_report"]
+        }, f, indent=2)
 
 def send_notification(title, message, url=""):
     headers = {
@@ -68,15 +85,42 @@ def analyze_with_jarvis(title, summary):
         print(f"Errore analisi IA: {e}")
         return {"notify": False}
 
+def check_ticketone_direct():
+    """Controlla direttamente la pagina di ricerca TicketOne per Imola F1"""
+    search_url = "https://www.ticketone.it/search/?searchterm=formula+1+imola"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    try:
+        resp = requests.get(search_url, headers=headers, timeout=10)
+        if resp.status_code == 200:
+            text = resp.text.lower()
+            # Parole chiave che indicano eventi attivi o vendita biglietti imminente
+            if "biglietti disponibili" in text or "acquista ora" in text or "compra ora" in text:
+                return True, search_url
+    except Exception as e:
+        print(f"Controllo diretto TicketOne saltato (possibile blocco anti-bot): {e}")
+    return False, ""
+
 def main():
+    state = load_state()
+    new_seen = set(state["seen"])
+    any_new_alert = False
 
-    # --- RIGA DI TEST DA AGGIUNGERE ---
-    send_notification("Test Jarvis", "Test eseguito correttamente", "https://google.com")
-    # ----------------------------------
-    
-    seen = load_seen()
-    new_seen = set(seen)
+    # 1. Controllo diretto TicketOne
+    print("Controllo diretto su TicketOne...")
+    t1_found, t1_url = check_ticketone_direct()
+    if t1_found and t1_url not in new_seen:
+        send_notification(
+            title="Jarvis F1 Imola (ALTA)",
+            message="Rilevati biglietti o eventi attivi direttamente sul sito TicketOne!",
+            url=t1_url
+        )
+        new_seen.add(t1_url)
+        any_new_alert = True
 
+    # 2. Controllo Feed RSS con Gemini
+    print("Controllo Feed RSS con Jarvis...")
     for rss_url in RSS_URLS:
         feed = feedparser.parse(rss_url)
         for entry in feed.entries[:5]:
@@ -93,10 +137,25 @@ def main():
                     message=result.get("short_message", entry.title),
                     url=entry.link
                 )
+                any_new_alert = True
 
             new_seen.add(article_id)
 
-    save_seen(new_seen)
+    # 3. Report Serale (intorno alle ore 20:00 italiane)
+    now_rome = datetime.now(ZoneInfo("Europe/Rome"))
+    today_str = now_rome.strftime("%Y-%m-%d")
+
+    if now_rome.hour >= 20 and state.get("last_daily_report") != today_str:
+        if not any_new_alert:
+            send_notification(
+                title="Jarvis F1 Imola - Report Serale 🌙",
+                message="Nessuna nuova news sui biglietti di Imola oggi. Tutto tranquillo!",
+                url="https://www.ticketone.it"
+            )
+        state["last_daily_report"] = today_str
+
+    state["seen"] = new_seen
+    save_state(state)
 
 if __name__ == "__main__":
     main()
