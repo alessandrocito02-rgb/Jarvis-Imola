@@ -45,8 +45,8 @@ def analyze_with_jarvis(title, summary):
     Dettagli: {summary}
 
     Avvisami (notify = true) SOLO SE la notizia riguarda:
-    1. L'apertura delle vendite, prevendite o date imminenti di uscita dei biglietti per la F1 a Imola (es. su TicketOne o sito ufficiale).
-    2. Notizie ufficiali o molto concrete sul fatto che il GP di Imola è confermato o è stato annullato definitivamente.
+    1. L'apertura delle vendite, prevendite o date imminenti di uscita dei biglietti per la F1 a Imola.
+    2. Notizie ufficiali o concrete sul fatto che il GP di Imola è confermato o annullato.
 
     Rispondi ESCLUSIVAMENTE in JSON:
     {{
