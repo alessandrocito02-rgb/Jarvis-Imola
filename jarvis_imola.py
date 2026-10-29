@@ -80,14 +80,18 @@ def analyze_with_jarvis(title, summary):
         "short_message": "Riassunto chiaro in italiano (max 2 righe)"
     }}
     """
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json"
+    # Lista di fallback (dal migliore al più leggero/disponibile)
+    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"]
+    
+    for nome_modello in modelli_da_provare:
+        try:
+            response = client.models.generate_content(
+                model=nome_modello,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
             )
-        )
         return json.loads(response.text)
     except Exception as e:
         print(f"Errore analisi IA: {e}")
