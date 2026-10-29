@@ -81,7 +81,7 @@ def analyze_with_jarvis(title, summary):
     }}
     """
     
-    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"]
+    modelli_da_provare = ["gemini-1.5-flash", "gemini-1.5-flash-8b"]
     
     for nome_modello in modelli_da_provare:
         try:
@@ -119,7 +119,7 @@ def generate_daily_summary(daily_log):
     Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni.
     """
     
-    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"]
+    modelli_da_provare = ["gemini-1.5-flash", "gemini-1.5-flash-8b"]
 
     for nome_modello in modelli_da_provare:
         try:
