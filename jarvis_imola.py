@@ -86,20 +86,27 @@ def analyze_with_jarvis(title, summary):
         return {"notify": False}
 
 def check_ticketone_direct():
-    """Controlla direttamente la pagina di ricerca TicketOne per Imola F1"""
+    """Controlla direttamente la pagina di ricerca TicketOne per Imola F1 con print di debug"""
     search_url = "https://www.ticketone.it/search/?searchterm=formula+1+imola"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }
     try:
         resp = requests.get(search_url, headers=headers, timeout=10)
+        print(f"TicketOne HTTP Status: {resp.status_code}")
+        
         if resp.status_code == 200:
             text = resp.text.lower()
-            # Parole chiave che indicano eventi attivi o vendita biglietti imminente
+            print("TicketOne: risposta 200 OK ricevuta correttamente.")
             if "biglietti disponibili" in text or "acquista ora" in text or "compra ora" in text:
+                print("TicketOne: rilevata la presenza di biglietti attivi!")
                 return True, search_url
+            else:
+                print("TicketOne: nessuna parola chiave di vendita trovata al momento.")
+        else:
+            print(f"TicketOne ha bloccato la richiesta con codice {resp.status_code}.")
     except Exception as e:
-        print(f"Controllo diretto TicketOne saltato (possibile blocco anti-bot): {e}")
+        print(f"Errore connessione TicketOne: {e}")
     return False, ""
 
 def main():
