@@ -94,22 +94,22 @@ def analyze_with_jarvis(title, summary):
         return {"notify": False}
 
 def generate_daily_summary(daily_log):
-    """Chiede a Gemini di riassumere la giornata in modo discorsivo"""
+    """Chiede a Gemini di riassumere le ultime ore in modo discorsivo"""
     if not daily_log:
-        events_text = "Nessuna notizia rilevata oggi."
+        events_text = "Nessuna notizia rilevata in questa fascia oraria."
     else:
         events_text = "\n".join(daily_log)
     
     prompt = f"""
     Sei Jarvis, assistente personale per i biglietti del GP di F1 a Imola.
-    Scrivi un breve resoconto serale (massimo 3-4 righe) da inviare come notifica al tuo creatore.
+    Scrivi un breve resoconto (massimo 3-4 righe) da inviare come notifica al tuo creatore.
     
-    Ecco le notizie che hai analizzato oggi:
+    Ecco le notizie che hai analizzato nelle ultime ore:
     {events_text}
     
-    Se la lista è vuota o contiene solo notizie irrilevanti, rassicura il tuo creatore con un tono amichevole dicendo che non ci sono stati movimenti sui biglietti.
+    Se la lista è vuota o contiene solo notizie irrilevanti, rassicura il tuo creatore dicendo che tutto tace sul fronte biglietti e non ci sono stati movimenti.
     Se invece nella lista ci sono stati allarmi importanti o novità rilevanti, riassumile in modo chiaro.
-    Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni o formattazioni markdown strane.
+    Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni.
     """
     
     try:
@@ -119,8 +119,8 @@ def generate_daily_summary(daily_log):
         )
         return response.text.strip()
     except Exception as e:
-        print(f"Errore IA nel report serale: {e}")
-        return "Errore nella generazione del riassunto serale, ma nessun allarme critico oggi."
+        print(f"Errore IA nel report: {e}")
+        return "Errore nella generazione del riassunto, ma nessun allarme critico."
 
 def check_ticketone_direct():
     """Controlla direttamente TicketOne. Se bloccato da anti-bot, fallisce rapidamente in 3s."""
@@ -201,21 +201,53 @@ def main():
                 )
                 any_new_alert = True
 
+            # --- NUOVO: Appunta la notizia nel diario di oggi ---
+            log_entry = f"- {entry.title}"
+            if result.get("notify"):
+                log_entry += f" [RITENUTA IMPORTANTE: {result.get('short_message')}]"
+            state["daily_log"].append(log_entry)
+            # ----------------------------------------------------
+
             new_seen.add(article_id)
 
-    # 3. Report Serale (intorno alle ore 20:00 italiane)
+   # 3. Report Periodici (09:30, 15:00, 20:00)
     now_rome = datetime.now(ZoneInfo("Europe/Rome"))
     today_str = now_rome.strftime("%Y-%m-%d")
 
-    if now_rome.hour >= 20 and state.get("last_daily_report") != today_str:
-        if not any_new_alert:
-            send_notification(
-                title="Jarvis F1 Imola - Report Serale 🌙",
-                message="Nessuna nuova news sui biglietti di Imola oggi. Tutto tranquillo!",
-                url="https://www.ticketone.it"
-            )
-        state["last_daily_report"] = today_str
+    # Identifica la fascia oraria corrente
+    current_report_id = None
+    if now_rome.hour >= 20:
+        current_report_id = f"{today_str}_2000"
+    elif now_rome.hour >= 15:
+        current_report_id = f"{today_str}_1500"
+    elif now_rome.hour > 9 or (now_rome.hour == 9 and now_rome.minute >= 30):
+        current_report_id = f"{today_str}_0930"
 
+    # Se siamo in una fascia valida e non abbiamo ancora mandato QUESTO report
+    if current_report_id and state.get("last_daily_report") != current_report_id:
+        print(f"Genero il report periodico ({current_report_id}) con Jarvis...")
+        
+        # Personalizza il titolo in base all'ora
+        if "0930" in current_report_id:
+            titolo_report = "Jarvis F1 Imola - Report Mattina ☕"
+        elif "1500" in current_report_id:
+            titolo_report = "Jarvis F1 Imola - Report Pomeriggio ☀️"
+        else:
+            titolo_report = "Jarvis F1 Imola - Report Serale 🌙"
+
+        summary_message = generate_daily_summary(state.get("daily_log", []))
+        
+        send_notification(
+            title=titolo_report,
+            message=summary_message,
+            url="https://www.ticketone.it"
+        )
+        
+        # Aggiorna la memoria con l'ID di questo report specifico e svuota il diario
+        state["last_daily_report"] = current_report_id
+        state["daily_log"] = [] 
+
+    # --- QUESTE DUE RIGHE DEVONO RIMANERE ALLA FINE DEL MAIN ---
     state["seen"] = new_seen
     save_state(state)
 
