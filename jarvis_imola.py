@@ -61,6 +61,41 @@ def send_notification(title, message, url=""):
         headers["Click"] = url
     requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=message.encode('utf-8'), headers=headers)
 
+def send_jarvis_voice_ntfy(title, text_message, url=""):
+    audio_filename = "jarvis_briefing.mp3"
+    
+    try:
+        # Genera la sintesi vocale in italiano
+        tts = gTTS(text=text_message, lang='it', slow=False)
+        tts.save(audio_filename)
+        
+        headers = {
+            "Title": title.encode('utf-8'),
+            "Priority": "high",
+            "Tags": "robot,racing_car",  # Icona Jarvis/Robot su ntfy
+            "Filename": "Jarvis_Briefing.mp3"
+        }
+        
+        if url:
+            headers["Click"] = url
+
+        # Carica il file audio direttamente nell'allegato della notifica
+        with open(audio_filename, "rb") as audio_file:
+            response = requests.post(
+                f"https://ntfy.sh/{NTFY_TOPIC}",
+                data=audio_file,
+                headers=headers
+            )
+            
+        print(f"Briefing vocale di Jarvis inviato con successo (Status {response.status_code})")
+        
+    except Exception as e:
+        print(f"Errore durante l'invio del briefing vocale: {e}")
+    finally:
+        if os.path.exists(audio_filename):
+            os.remove(audio_filename)
+
+
 def analyze_with_jarvis(title, summary):
     prompt = f"""
     Sei Jarvis, un assistente che monitora il Gran Premio di Formula 1 di Imola.
@@ -102,22 +137,26 @@ def analyze_with_jarvis(title, summary):
     return {"notify": False}
 
 def generate_daily_summary(daily_log):
-    """Chiede a Gemini di riassumere le ultime ore in modo discorsivo"""
+    """Chiede a Gemini di creare un report vocale nello stile autentico di Jarvis"""
     if not daily_log:
-        events_text = "Nessuna notizia rilevata in questa fascia oraria."
+        events_text = "Nessun movimento rilevato sui canali ufficiali o di rassegna stampa."
     else:
         events_text = "\n".join(daily_log)
     
     prompt = f"""
-    Sei Jarvis, assistente personale per i biglietti del GP di F1 a Imola.
-    Scrivi un breve resoconto (massimo 3-4 righe) da inviare come notifica al tuo creatore.
-    
-    Ecco le notizie che hai analizzato nelle ultime ore:
+    Sei Jarvis, l'intelligenza artificiale personale e maggiordomo di bordo.
+    Il tuo compito è fornire un resoconto vocale rapido e impeccabile al tuo creatore riguardo il GP di Formula 1 di Imola e la disponibilità dei biglietti.
+
+    Ecco i dati raccolti nelle ultime ore:
     {events_text}
-    
-    Se la lista è vuota o contiene solo notizie irrilevanti, rassicura il tuo creatore dicendo che tutto tace sul fronte biglietti e non ci sono stati movimenti.
-    Se invece nella lista ci sono stati allarmi importanti o novità rilevanti, riassumile in modo chiaro.
-    Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni.
+
+    Istruzioni per lo stile (INCONFONDIBILE STILE JARVIS):
+    - Esordisci con un saluto formale e distinto in italiano (es. "Signore,", "Buondì, Signore.", "Ammiraglio,").
+    - Usa un tono composto, estremamente educato, britannico ed efficiente.
+    - Se non ci sono novità, rassicuralo dicendo che i sistemi sono operativi, tutto tace sul fronte biglietti e che continuerai a monitorare.
+    - Se ci sono novità importanti, sintetizzale con estrema precisione e chiarezza chirurgica.
+    - Chiudi con una frase di congedo breve ed elegante (es. "Resto in attesa di ulteriori sviluppi.", "Sistemi in stand-by.").
+    - Lunghezza massima: 3-4 frasi da leggere a voce. Rispondi ESCLUSIVAMENTE con il testo che dovrai pronunciare.
     """
     
     modelli_da_provare = ["gemini-1.5-flash", "gemini-1.5-flash-8b"]
@@ -130,12 +169,10 @@ def generate_daily_summary(daily_log):
             )
             return response.text.strip()
         except Exception as e:
-            # 1. ECCO IL PRINT: avvisa del singolo errore e il ciclo continua
-            print(f"Errore IA nel report con {nome_modello}: {e}. Passo al successivo...")
+            print(f"Errore generazione report con {nome_modello}: {e}")
             time.sleep(1)
 
-    # 2. ECCO IL RETURN: scatta come ultima spiaggia se tutto il ciclo fallisce
-    return "Errore nella generazione del riassunto, ma nessun allarme critico."
+    return "Signore, i sistemi di analisi hanno riscontrato un'anomalia di rete. Tuttavia, non risultano allarmi critici per i biglietti di Imola."
 
 def check_ticketone_direct():
     """Controlla direttamente TicketOne. Se bloccato da anti-bot, fallisce rapidamente in 3s."""
@@ -239,28 +276,28 @@ def main():
         current_report_id = f"{today_str}_0930"
 
     # Se siamo in una fascia valida e non abbiamo ancora mandato QUESTO report
-    if current_report_id and state.get("last_daily_report") != current_report_id:
-        print(f"Genero il report periodico ({current_report_id}) con Jarvis...")
+        if current_report_id and state.get("last_daily_report") != current_report_id:
+        print(f"Jarvis sta preparando il briefing vocale ({current_report_id})...")
         
-        # Personalizza il titolo in base all'ora
         if "0930" in current_report_id:
-            titolo_report = "Jarvis F1 Imola - Report Mattina ☕"
+            titolo_report = "Jarvis | Briefing Mattutino ☕"
         elif "1500" in current_report_id:
-            titolo_report = "Jarvis F1 Imola - Report Pomeriggio ☀️"
+            titolo_report = "Jarvis | Aggiornamento Pomeridiano ☀️"
         else:
-            titolo_report = "Jarvis F1 Imola - Report Serale 🌙"
+            titolo_report = "Jarvis | Resoconto Serale 🌙"
 
         summary_message = generate_daily_summary(state.get("daily_log", []))
         
-        send_notification(
+        # Invia la notifica con l'audio integrato
+        send_jarvis_voice_ntfy(
             title=titolo_report,
-            message=summary_message,
+            text_message=summary_message,
             url="https://www.ticketone.it"
         )
         
-        # Aggiorna la memoria con l'ID di questo report specifico e svuota il diario
         state["last_daily_report"] = current_report_id
-        state["daily_log"] = [] 
+        state["daily_log"] = []
+ 
 
     # --- QUESTE DUE RIGHE DEVONO RIMANERE ALLA FINE DEL MAIN ---
     state["seen"] = new_seen
