@@ -69,6 +69,11 @@ def analyze_with_jarvis(title, summary):
         return {"notify": False}
 
 def main():
+
+    # --- RIGA DI TEST DA AGGIUNGERE ---
+    send_notification("Test Jarvis", "Notifica di prova! Il webhook su GitHub funziona perfettamente.", "https://google.com")
+    # ----------------------------------
+    
     seen = load_seen()
     new_seen = set(seen)
 
