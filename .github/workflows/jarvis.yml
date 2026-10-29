@@ -2,8 +2,8 @@ name: Jarvis F1 Imola Monitor
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Gira ogni 15 minuti
-  workflow_dispatch:       # Permette di testarlo subito con un clic
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 permissions:
   contents: write
