@@ -160,7 +160,7 @@ def check_ticketone_direct():
 def main():
 
     # --- RIGA DI TEST DA AGGIUNGERE ---
-    send_notification("Test Jarvis", "Test funzionante", "https://www.ticketone.it/artist/formula-1-imola/")
+    #send_notification("Test Jarvis", "Test funzionante", "https://www.ticketone.it/artist/formula-1-imola/")
     # ----------------------------------
     
     state = load_state()
