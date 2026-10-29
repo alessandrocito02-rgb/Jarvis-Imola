@@ -116,15 +116,22 @@ def generate_daily_summary(daily_log):
     Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni.
     """
     
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt
-        )
-        return response.text.strip()
-    except Exception as e:
-        print(f"Errore IA nel report: {e}")
-        return "Errore nella generazione del riassunto, ma nessun allarme critico."
+    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro"]
+
+    for nome_modello in modelli_da_provare:
+        try:
+            response = client.models.generate_content(
+                model=nome_modello,
+                contents=prompt
+            )
+            return response.text.strip()
+        except Exception as e:
+            # 1. ECCO IL PRINT: avvisa del singolo errore e il ciclo continua
+            print(f"Errore IA nel report con {nome_modello}: {e}. Passo al successivo...")
+            time.sleep(1)
+
+    # 2. ECCO IL RETURN: scatta come ultima spiaggia se tutto il ciclo fallisce
+    return "Errore nella generazione del riassunto, ma nessun allarme critico."
 
 def check_ticketone_direct():
     """Controlla direttamente TicketOne. Se bloccato da anti-bot, fallisce rapidamente in 3s."""
