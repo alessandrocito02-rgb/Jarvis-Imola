@@ -276,7 +276,7 @@ def main():
         current_report_id = f"{today_str}_0930"
 
     # Se siamo in una fascia valida e non abbiamo ancora mandato QUESTO report
-        if current_report_id and state.get("last_daily_report") != current_report_id:
+    if current_report_id and state.get("last_daily_report") != current_report_id:
         print(f"Jarvis sta preparando il briefing vocale ({current_report_id})...")
         
         if "0930" in current_report_id:
