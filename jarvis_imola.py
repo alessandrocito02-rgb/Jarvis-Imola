@@ -25,28 +25,29 @@ RSS_URLS = [
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def load_state():
-    """Carica lo stato salvato (articoli visti e data ultimo report serale)"""
+    """Carica lo stato salvato (articoli visti, data ultimo report e diario giornaliero)"""
     if os.path.exists(SEEN_FILE):
         try:
             with open(SEEN_FILE, "r") as f:
                 data = json.load(f)
-                # Gestione retrocompatibilità se il file conteneva solo una lista
                 if isinstance(data, list):
-                    return {"seen": set(data), "last_daily_report": ""}
+                    return {"seen": set(data), "last_daily_report": "", "daily_log": []}
                 return {
                     "seen": set(data.get("seen", [])),
-                    "last_daily_report": data.get("last_daily_report", "")
+                    "last_daily_report": data.get("last_daily_report", ""),
+                    "daily_log": data.get("daily_log", []) # NUOVO: carica il diario
                 }
         except Exception as e:
             print(f"Errore lettura file memoria: {e}")
-    return {"seen": set(), "last_daily_report": ""}
+    return {"seen": set(), "last_daily_report": "", "daily_log": []}
 
 def save_state(state):
     """Salva lo stato aggiornato"""
     with open(SEEN_FILE, "w") as f:
         json.dump({
             "seen": list(state["seen"]),
-            "last_daily_report": state["last_daily_report"]
+            "last_daily_report": state["last_daily_report"],
+            "daily_log": state.get("daily_log", []) # NUOVO: salva il diario
         }, f, indent=2)
 
 def send_notification(title, message, url=""):
@@ -91,6 +92,35 @@ def analyze_with_jarvis(title, summary):
     except Exception as e:
         print(f"Errore analisi IA: {e}")
         return {"notify": False}
+
+def generate_daily_summary(daily_log):
+    """Chiede a Gemini di riassumere la giornata in modo discorsivo"""
+    if not daily_log:
+        events_text = "Nessuna notizia rilevata oggi."
+    else:
+        events_text = "\n".join(daily_log)
+    
+    prompt = f"""
+    Sei Jarvis, assistente personale per i biglietti del GP di F1 a Imola.
+    Scrivi un breve resoconto serale (massimo 3-4 righe) da inviare come notifica al tuo creatore.
+    
+    Ecco le notizie che hai analizzato oggi:
+    {events_text}
+    
+    Se la lista è vuota o contiene solo notizie irrilevanti, rassicura il tuo creatore con un tono amichevole dicendo che non ci sono stati movimenti sui biglietti.
+    Se invece nella lista ci sono stati allarmi importanti o novità rilevanti, riassumile in modo chiaro.
+    Rispondi ESCLUSIVAMENTE con il testo del messaggio, senza altre introduzioni o formattazioni markdown strane.
+    """
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"Errore IA nel report serale: {e}")
+        return "Errore nella generazione del riassunto serale, ma nessun allarme critico oggi."
 
 def check_ticketone_direct():
     """Controlla direttamente TicketOne. Se bloccato da anti-bot, fallisce rapidamente in 3s."""
