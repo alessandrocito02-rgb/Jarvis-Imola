@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. - Daily Briefing</title>
+    <!-- Tailwind CSS per il layout di base -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font futuristici da Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Variabili di sistema */
+        :root {
+            --neon-blue: #00f3ff;
+            --dark-bg: #02040a;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-blue);
+            font-family: 'Rajdhani', sans-serif;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.08) 0%, transparent 70%),
+                linear-gradient(rgba(0,243,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,243,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        .text-glow { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); }
+
+        /* --- HUD Rings (Iron Man Style) --- */
+        .hud-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1000px;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .ring-1 {
+            width: 80vmin; height: 80vmin;
+            border: 2px solid rgba(0, 243, 255, 0.1);
+            border-top: 4px solid var(--neon-blue);
+            border-left: 2px solid rgba(0, 243, 255, 0.5);
+            animation: spin 12s linear infinite;
+        }
+
+        .ring-2 {
+            width: 72vmin; height: 72vmin;
+            border: 2px dashed var(--neon-blue);
+            opacity: 0.5;
+            animation: spin-reverse 18s linear infinite;
+        }
+
+        .ring-3 {
+            width: 60vmin; height: 60vmin;
+            border: 4px solid transparent;
+            border-bottom: 4px solid var(--neon-blue);
+            border-right: 4px solid rgba(0, 243, 255, 0.8);
+            animation: spin 8s ease-in-out infinite alternate;
+        }
+        
+        .ring-4 {
+            width: 45vmin; height: 45vmin;
+            border: 2px dotted rgba(0, 243, 255, 0.4);
+            animation: spin-reverse 25s linear infinite;
+        }
+
+        /* Accelerated animation when speaking */
+        .is-speaking .ring-1 { animation: spin 4s linear infinite; }
+        .is-speaking .ring-2 { animation: spin-reverse 6s linear infinite; }
+        .is-speaking .ring-3 { animation: spin 3s ease-in-out infinite alternate; }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
+
+        /* Central Overlay & Button */
+        .center-content {
+            position: absolute;
+            z-index: 10;
+            text-align: center;
+            width: 70vmin;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .jarvis-btn {
+            background: rgba(0, 243, 255, 0.1);
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 0 15px var(--neon-blue) inset, 0 0 20px var(--neon-blue);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .jarvis-btn:hover {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            box-shadow: 0 0 30px var(--neon-blue) inset, 0 0 40px var(--neon-blue);
+            transform: scale(1.05);
+        }
+
+        .active-text {
+            font-size: 1.8rem;
+            line-height: 1.3;
+            font-weight: 600;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px var(--neon-blue);
+            background: rgba(2, 4, 10, 0.6);
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .active-text.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Archive Section */
+        .archive-section {
+            height: 30vh;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0, 243, 255, 0.05), transparent);
+            border-top: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .archive-item {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: rgba(0, 243, 255, 0.7);
+            border-left: 2px solid var(--neon-blue);
+            padding-left: 10px;
+            background: rgba(0, 243, 255, 0.05);
+            padding: 10px;
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scanlines */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* Header */
+        .hud-header {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 20;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <header class="hud-header">
+        <div class="orbitron text-2xl md:text-3xl font-bold text-glow tracking-widest">J.A.R.V.I.S.</div>
+        <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00f3ff]"></div>
+            <span class="text-xs md:text-sm tracking-widest text-cyan-400/80 font-mono">SYS.ONLINE</span>
+        </div>
+    </header>
+
+    <!-- Center Hologram Area -->
+    <div class="hud-container" id="hud-core">
+        <!-- Rotational Rings -->
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="ring ring-4"></div>
+
+        <!-- Interactive Center -->
+        <div class="center-content">
+            <button id="start-btn" class="jarvis-btn orbitron font-bold">
+                Avvia Protocollo
+            </button>
+            <div id="active-display" class="active-text hidden">
+                <!-- Text injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Archive Section (Bottom) -->
+    <div class="archive-section" id="archive-log">
+        <div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>
+        <!-- Log items injected here -->
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('start-btn');
+            const activeDisplay = document.getElementById('active-display');
+            const archiveLog = document.getElementById('archive-log');
+            const hudCore = document.getElementById('hud-core');
+
+            // Array di notizie fittizie
+            const newsSequence = [
+                "Connessione stabilita. Rilevata nuova disponibilità biglietti per il Gran Premio di Formula 1 a Imola. Priorità: ALTA.",
+                "Aggiornamento SSC Napoli: terminata la sessione di allenamento a Castel Volturno. Si valuta il turnover in attacco per la prossima partita.",
+                "Settore Automotive: Audi e BMW annunciano nuovi prototipi ibridi di punta. Presentazione ufficiale stimata per il prossimo trimestre.",
+                "Tecnologia: Rilasciato un nuovo modello di intelligenza artificiale. Capacità di ragionamento logico incrementate del 40 per cento."
+            ];
+
+            let currentIndex = 0;
+
+            startBtn.addEventListener('click', () => {
+                if (!('speechSynthesis' in window)) {
+                    alert("Sintesi vocale non supportata in questo browser.");
+                    return;
+                }
+
+                // 1. Pulisci la cronologia vecchia (tranne l'intestazione)
+                archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
+                
+                // 2. Nascondi il pulsante e prepara l'HUD
+                startBtn.classList.add('hidden');
+                activeDisplay.classList.remove('hidden');
+                hudCore.classList.add('is-speaking');
+                
+                currentIndex = 0;
+                window.speechSynthesis.cancel(); // ferma audio precedente se in corso
+                
+                // Avvia la catena logica
+                playNextNews();
+            });
+
+            function playNextNews() {
+                if (currentIndex >= newsSequence.length) {
+                    // Fine del protocollo
+                    activeDisplay.classList.remove('show');
+                    setTimeout(() => {
+                        activeDisplay.classList.add('hidden');
+                        startBtn.classList.remove('hidden');
+                        hudCore.classList.remove('is-speaking');
+                    }, 500);
+                    return;
+                }
+
+                const textToRead = newsSequence[currentIndex];
+                
+                // Mostra il testo in grande al centro
+                activeDisplay.textContent = textToRead;
+                activeDisplay.classList.add('show');
+
+                // Prepara il sintetizzatore
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'it-IT';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.9; // Tono da assistente AI
+
+                // Prova a impostare una voce italiana
+                const voices = window.speechSynthesis.getVoices();
+                const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
+                if (italianVoice) utterance.voice = italianVoice;
+
+                utterance.onend = () => {
+                    // 3. Sposta il testo nell'archivio appena finisce l'audio
+                    archiveNews(textToRead);
+                    
+                    // Dissolvenza della notizia al centro
+                    activeDisplay.classList.remove('show');
+                    
+                    currentIndex++;
+                    
+                    // Pausa scenica tra una notizia e l'altra per far scivolare via l'overlay
+                    setTimeout(() => {
+                        playNextNews();
+                    }, 600);
+                };
+
+                utterance.onerror = (e) => {
+                    console.error("Errore TTS:", e);
+                    archiveNews("Errore modulo vocale: " + textToRead);
+                    currentIndex++;
+                    playNextNews();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function archiveNews(text) {
+                const logItem = document.createElement('div');
+                logItem.className = 'archive-item';
+                logItem.textContent = "> " + text;
+                
+                // Inserisce in cima all'archivio (subito sotto il titolo dell'archivio)
+                archiveLog.insertBefore(logItem, archiveLog.children[1]);
+                
+                // Mantiene lo scroll in cima
+                archiveLog.scrollTop = 0;
+            }
+
+            // Inizializza voci per evitare bug su Chrome
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+        });
+    </script>
+</body>
+</html>
