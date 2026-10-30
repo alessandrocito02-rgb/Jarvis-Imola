@@ -135,7 +135,7 @@ def main():
     if NTFY_TOPIC:
         try:
             headers_ntfy = {
-                "Title": "Jarvis - Rassegna Stampa 🌍".encode('utf-8'),
+                "Title": "Jarvis - Rassegna Stampa ",
                 "Priority": "default",
                 "Actions": "view, Apri Dashboard, [https://alessandrocito02-rgb.github.io/Jarvis-Imola/](https://alessandrocito02-rgb.github.io/Jarvis-Imola/)"
             }
