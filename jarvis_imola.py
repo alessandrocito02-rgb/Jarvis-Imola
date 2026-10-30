@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from google import genai
 from google.genai import types
+from gtts import gTTS
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
@@ -64,13 +65,37 @@ def send_notification(title, message, url=""):
 def send_jarvis_voice_ntfy(title, text_message, url=""):
     audio_filename = "jarvis_briefing.mp3"
     api_key = os.environ.get("ELEVENLABS_API_KEY")
-    
-    # INCOLLA QUI IL VOICE ID DI ELEVENLABS
     voice_id = "uI37iVjOs9xsSHtLUP5f" 
-    
+
+    def usa_piano_b_gtts():
+        print("Avvio Piano B: generazione voce con Google TTS...")
+        try:
+            tts = gTTS(text=text_message, lang='it')
+            tts.save(audio_filename)
+            
+            headers_ntfy = {
+                "Title": title.encode('utf-8'),
+                "Priority": "high",
+                "Tags": "robot,racing_car",
+                "Filename": "Jarvis_Backup.mp3"
+            }
+            if url:
+                headers_ntfy["Actions"] = f"view, Apri Link, {url}"
+
+            with open(audio_filename, "rb") as audio_file:
+                requests.post(
+                    f"https://ntfy.sh/{NTFY_TOPIC}",
+                    data=audio_file,
+                    headers=headers_ntfy
+                )
+            print("Briefing vocale di emergenza inviato con gTTS!")
+        except Exception as e_gtts:
+            print(f"Errore critico anche nel Piano B (gTTS): {e_gtts}")
+
+    # --- INIZIO TENTATIVO CON ELEVENLABS (PIANO A) ---
     if not api_key:
-        print("Errore: ELEVENLABS_API_KEY non trovata. Invio solo testo.")
-        send_notification(title, text_message, url)
+        print("Errore: ELEVENLABS_API_KEY non trovata.")
+        usa_piano_b_gtts()
         return
 
     url_eleven = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -107,7 +132,6 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
             }
             
             if url:
-                # Crea un comodo pulsante separato al posto di far cliccare l'intera notifica
                 headers_ntfy["Actions"] = f"view, Apri Link, {url}"
 
             with open(audio_filename, "rb") as audio_file:
@@ -120,12 +144,13 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
             
         else:
             print(f"Errore API ElevenLabs ({response.status_code}): {response.text}")
-            # Fallback sicuro: se l'API vocale fallisce, ti manda la notifica testuale
-            send_notification(title, text_message, url)
+            # Se l'API di ElevenLabs risponde con un errore (es. crediti esauriti), scatta il Piano B
+            usa_piano_b_gtts()
             
     except Exception as e:
-        print(f"Errore durante la generazione dell'audio: {e}")
-        send_notification(title, text_message, url)
+        print(f"Errore di connessione a ElevenLabs: {e}")
+        # Se c'è un errore di rete o crash, scatta il Piano B
+        usa_piano_b_gtts()
         
     finally:
         if os.path.exists(audio_filename):
