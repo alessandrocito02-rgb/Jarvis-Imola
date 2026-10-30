@@ -254,7 +254,8 @@
             for (let i = 0; i < frasi.length; i++) {
                 let testoNotizia = frasi[i].testo || frasi[i];
                 let urlNotizia = frasi[i].url || "";
-                let fileAudio = frasi[i].audio || `audio_${i}.mp3`;
+                // ECCOLA QUI: cerca il file dentro la cartella "audio/"
+                let fileAudio = frasi[i].audio || `audio/audio_${i}.mp3`;
                 
                 if (typeof testoNotizia === "string" && testoNotizia.trim() !== "") {
                     await parlaConElevenLabs(testoNotizia, urlNotizia, fileAudio);
@@ -275,7 +276,6 @@
                 activeDisplay.textContent = testo;
                 activeDisplay.classList.add('show');
 
-                // Carica il file MP3 di ElevenLabs evitando la cache
                 playerAudio.src = fileAudio + '?t=' + new Date().getTime();
 
                 playerAudio.onended = () => {
@@ -285,7 +285,6 @@
                 };
 
                 playerAudio.onerror = () => {
-                    // Se il file MP3 non viene trovato, mostra comunque la notizia
                     archiveNews(testo, url);
                     setTimeout(() => {
                         activeDisplay.classList.remove('show');
