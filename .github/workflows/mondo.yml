@@ -21,11 +21,11 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: python jarvis_mondo.py
         
-      - name: Salva i dati per l'interfaccia web
+      - name: Salva i dati e gli MP3 per l'interfaccia web
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull origin main --rebase || echo "Nessun conflitto"
-          git add briefing.json
-          git commit -m "Aggiornamento automatico briefing.json" || echo "Nessuna modifica"
+          git add briefing.json audio_*.mp3
+          git commit -m "Aggiornamento automatico briefing e voce ElevenLabs" || echo "Nessuna modifica"
           git push origin main
