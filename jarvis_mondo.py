@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC_MONDO")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
