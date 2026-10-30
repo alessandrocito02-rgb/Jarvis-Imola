@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>J.A.R.V.I.S. - Daily Briefing</title>
-    <!-- Tailwind CSS per il layout di base -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font futuristici da Google Fonts -->
+    <!-- Font futuristici -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Variabili di sistema */
         :root {
             --neon-blue: #00f3ff;
             --dark-bg: #02040a;
@@ -35,7 +34,7 @@
         .orbitron { font-family: 'Orbitron', sans-serif; }
         .text-glow { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); }
 
-        /* --- HUD Rings (Iron Man Style) --- */
+        /* --- HUD Rings --- */
         .hud-container {
             position: relative;
             flex-grow: 1;
@@ -83,7 +82,6 @@
             animation: spin-reverse 25s linear infinite;
         }
 
-        /* Accelerated animation when speaking */
         .is-speaking .ring-1 { animation: spin 4s linear infinite; }
         .is-speaking .ring-2 { animation: spin-reverse 6s linear infinite; }
         .is-speaking .ring-3 { animation: spin 3s ease-in-out infinite alternate; }
@@ -125,17 +123,17 @@
         }
 
         .active-text {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             line-height: 1.3;
             font-weight: 600;
             opacity: 0;
             transform: scale(0.9);
             transition: all 0.5s ease;
             text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px var(--neon-blue);
-            background: rgba(2, 4, 10, 0.6);
+            background: rgba(2, 4, 10, 0.7);
             padding: 25px;
             border-radius: 10px;
-            border: 1px solid rgba(0, 243, 255, 0.2);
+            border: 1px solid rgba(0, 243, 255, 0.3);
             backdrop-filter: blur(10px);
         }
 
@@ -174,7 +172,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Scanlines */
         .scanlines {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -184,7 +181,6 @@
             z-index: 50;
         }
 
-        /* Header */
         .hud-header {
             position: absolute;
             top: 0; left: 0; width: 100%;
@@ -207,29 +203,24 @@
         </div>
     </header>
 
-    <!-- Center Hologram Area -->
     <div class="hud-container" id="hud-core">
-        <!-- Rotational Rings -->
         <div class="ring ring-1"></div>
         <div class="ring ring-2"></div>
         <div class="ring ring-3"></div>
         <div class="ring ring-4"></div>
 
-        <!-- Interactive Center -->
         <div class="center-content">
             <button id="start-btn" class="jarvis-btn orbitron font-bold">
                 Avvia Protocollo
             </button>
             <div id="active-display" class="active-text hidden">
-                <!-- Text injected via JS -->
+                Inizializzazione sistemi...
             </div>
         </div>
     </div>
 
-    <!-- Archive Section (Bottom) -->
     <div class="archive-section" id="archive-log">
         <div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>
-        <!-- Log items injected here -->
     </div>
 
     <script>
@@ -239,104 +230,85 @@
             const archiveLog = document.getElementById('archive-log');
             const hudCore = document.getElementById('hud-core');
 
-            // Array di notizie fittizie
-            const newsSequence = [
-                "Connessione stabilita. Rilevata nuova disponibilità biglietti per il Gran Premio di Formula 1 a Imola. Priorità: ALTA.",
-                "Aggiornamento SSC Napoli: terminata la sessione di allenamento a Castel Volturno. Si valuta il turnover in attacco per la prossima partita.",
-                "Settore Automotive: Audi e BMW annunciano nuovi prototipi ibridi di punta. Presentazione ufficiale stimata per il prossimo trimestre.",
-                "Tecnologia: Rilasciato un nuovo modello di intelligenza artificiale. Capacità di ragionamento logico incrementate del 40 per cento."
-            ];
-
-            let currentIndex = 0;
-
-            startBtn.addEventListener('click', () => {
+            startBtn.addEventListener('click', async () => {
                 if (!('speechSynthesis' in window)) {
                     alert("Sintesi vocale non supportata in questo browser.");
                     return;
                 }
 
-                // 1. Pulisci la cronologia vecchia (tranne l'intestazione)
-                archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
-                
-                // 2. Nascondi il pulsante e prepara l'HUD
                 startBtn.classList.add('hidden');
                 activeDisplay.classList.remove('hidden');
                 hudCore.classList.add('is-speaking');
                 
-                currentIndex = 0;
-                window.speechSynthesis.cancel(); // ferma audio precedente se in corso
-                
-                // Avvia la catena logica
-                playNextNews();
-            });
+                archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
+                window.speechSynthesis.cancel();
 
-            function playNextNews() {
-                if (currentIndex >= newsSequence.length) {
-                    // Fine del protocollo
-                    activeDisplay.classList.remove('show');
-                    setTimeout(() => {
-                        activeDisplay.classList.add('hidden');
-                        startBtn.classList.remove('hidden');
-                        hudCore.classList.remove('is-speaking');
-                    }, 500);
-                    return;
+                let frasi = [];
+                try {
+                    // Scarica l'ultimo briefing generato da Python
+                    const response = await fetch('briefing.json?t=' + new Date().getTime());
+                    if (response.ok) {
+                        frasi = await response.json();
+                    } else {
+                        frasi = ["Attenzione Signore, file di briefing non ancora disponibile sui server."];
+                    }
+                } catch (error) {
+                    console.error("Errore di rete:", error);
+                    frasi = ["Errore di connessione al sistema di briefing."];
                 }
 
-                const textToRead = newsSequence[currentIndex];
-                
-                // Mostra il testo in grande al centro
-                activeDisplay.textContent = textToRead;
-                activeDisplay.classList.add('show');
+                for (let i = 0; i < frasi.length; i++) {
+                    await parlaFrase(frasi[i]);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
 
-                // Prepara il sintetizzatore
-                const utterance = new SpeechSynthesisUtterance(textToRead);
-                utterance.lang = 'it-IT';
-                utterance.rate = 1.0;
-                utterance.pitch = 0.9; // Tono da assistente AI
+                // Fine sequenza
+                activeDisplay.classList.remove('show');
+                setTimeout(() => {
+                    activeDisplay.classList.add('hidden');
+                    startBtn.classList.remove('hidden');
+                    hudCore.classList.remove('is-speaking');
+                }, 500);
+            });
 
-                // Prova a impostare una voce italiana
-                const voices = window.speechSynthesis.getVoices();
-                const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
-                if (italianVoice) utterance.voice = italianVoice;
+            function parlaFrase(testo) {
+                return new Promise((resolve) => {
+                    activeDisplay.textContent = testo;
+                    activeDisplay.classList.add('show');
 
-                utterance.onend = () => {
-                    // 3. Sposta il testo nell'archivio appena finisce l'audio
-                    archiveNews(textToRead);
-                    
-                    // Dissolvenza della notizia al centro
-                    activeDisplay.classList.remove('show');
-                    
-                    currentIndex++;
-                    
-                    // Pausa scenica tra una notizia e l'altra per far scivolare via l'overlay
-                    setTimeout(() => {
-                        playNextNews();
-                    }, 600);
-                };
+                    const utterance = new SpeechSynthesisUtterance(testo);
+                    utterance.lang = 'it-IT';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 0.9;
 
-                utterance.onerror = (e) => {
-                    console.error("Errore TTS:", e);
-                    archiveNews("Errore modulo vocale: " + textToRead);
-                    currentIndex++;
-                    playNextNews();
-                };
+                    const voices = window.speechSynthesis.getVoices();
+                    const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
+                    if (italianVoice) utterance.voice = italianVoice;
 
-                window.speechSynthesis.speak(utterance);
+                    utterance.onend = () => {
+                        archiveNews(testo);
+                        activeDisplay.classList.remove('show');
+                        resolve();
+                    };
+
+                    utterance.onerror = () => {
+                        archiveNews("Errore voce: " + testo);
+                        activeDisplay.classList.remove('show');
+                        resolve();
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                });
             }
 
             function archiveNews(text) {
                 const logItem = document.createElement('div');
                 logItem.className = 'archive-item';
                 logItem.textContent = "> " + text;
-                
-                // Inserisce in cima all'archivio (subito sotto il titolo dell'archivio)
                 archiveLog.insertBefore(logItem, archiveLog.children[1]);
-                
-                // Mantiene lo scroll in cima
                 archiveLog.scrollTop = 0;
             }
 
-            // Inizializza voci per evitare bug su Chrome
             if (speechSynthesis.onvoiceschanged !== undefined) {
                 speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
             }
