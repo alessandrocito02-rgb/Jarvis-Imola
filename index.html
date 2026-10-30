@@ -282,8 +282,8 @@
 
                 const utterance = new SpeechSynthesisUtterance(testo);
                 utterance.lang = 'it-IT';
-                utterance.rate = 1.0;
-                utterance.pitch = 0.9;
+                utterance.rate = 1.2;
+                utterance.pitch = 1.0;
 
                 const voices = window.speechSynthesis.getVoices();
                 const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
