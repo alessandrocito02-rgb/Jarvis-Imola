@@ -97,7 +97,6 @@ def main():
     }
     
     testo_notizie = ""
-    # Filtro rigoroso: solo notizie delle ultime 24 ore
     time_limit = datetime.now(timezone.utc) - timedelta(days=1)
     
     for categoria, url in argomenti.items():
@@ -110,7 +109,8 @@ def main():
                 article_date = datetime.fromtimestamp(time.mktime(entry.published_parsed), tz=timezone.utc)
                 if article_date < time_limit:
                     continue
-            testo_temp += f"- {entry.title}\n"
+            # Aggiungo l'URL della notizia al testo che passeremo a Gemini
+            testo_temp += f"- {entry.title} | URL: {entry.link}\n"
             notizie_valide += 1
             if notizie_valide >= 4:
                 break
@@ -119,44 +119,51 @@ def main():
             testo_notizie += testo_temp
             
     prompt = f"""
-    Sei Jarvis. Leggi i titoli delle notizie delle ultime 24 ore:
+    Sei Jarvis, un assistente virtuale. Leggi i titoli e i link delle notizie delle ultime 24 ore divise per categorie:
     {testo_notizie}
     
-    Regola fondamentale: Usa ESATTAMENTE le stesse notizie per il testo scritto e per la voce. Non inventare o omettere discrepanze tra i due formati.
+    Regole fondamentali:
+    1. DEVI trattare TUTTE le categorie fornite nel testo. Non omettere nessun argomento (parla di Napoli, Italia, Tecnologia, AI e Motori).
+    2. Usa le notizie reali fornite. Non inventare nulla.
+    3. I riassunti non devono essere troppo brevi: scrivi almeno 2 o 3 frasi corpose per ogni notizia, fornendo i dettagli chiave in italiano naturale, fluido e formale.
     
-    Restituisci ESCLUSIVAMENTE un oggetto JSON con:
-    1. "testo_notifica": Una stringa sintetica divisa per categorie (con emoji) da leggere a colpo d'occhio.
-    2. "frasi_hud": Lista di stringhe con le identiche notizie, scritte in italiano naturale, fluido e formale per l'interfaccia web.
-    3. "testo_vocale": Un'unica stringa che unisce le 'frasi_hud' in un discorso continuo, progettato per essere letto ad alta voce dalla tua sintesi vocale. Inizia con "Buongiorno signore, ecco la rassegna stampa."
+    Restituisci ESCLUSIVAMENTE un oggetto JSON con questa esatta struttura:
+    {{
+      "testo_notifica": "Una stringa sintetica divisa per categorie (con emoji) da leggere a colpo d'occhio.",
+      "frasi_hud": [
+        {{
+          "testo": "Riassunto fluido di 2-3 frasi della notizia...",
+          "url": "L'URL originale della notizia copiato dal testo fornito"
+        }}
+      ],
+      "testo_vocale": "Un'unica stringa che unisce i 'testo' di frasi_hud in un discorso continuo per il TTS. Inizia con 'Buongiorno signore, ecco la rassegna stampa.'"
+    }}
     """
     
     try:
         print("Elaborazione dati e allineamento formati...")
         response = client.models.generate_content(
-            model="gemini-3.8-flash",
+            model="gemini-2.5-flash", # Assicurati di usare un modello valido (es. gemini-1.5-flash)
             contents=prompt,
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
         dati = json.loads(response.text)
         
-        # 1. Salva su GitHub per il sito web
+        # Salva la lista di oggetti (testo + url) su GitHub
         with open("briefing.json", "w", encoding="utf-8") as f:
             json.dump(dati["frasi_hud"], f, ensure_ascii=False, indent=2)
             
-        # 2. Invia l'audio ElevenLabs tramite ntfy
         send_jarvis_voice_ntfy(
             title="Jarvis - Rassegna Stampa 🌍",
             text_message=dati["testo_vocale"],
             url="https://alessandrocito02-rgb.github.io/Jarvis-Imola/"
         )
         
-        # 3. Invia il testo sintetico in un'altra notifica
         headers = {
             "Title": "Dettaglio Notizie 📰".encode('utf-8'),
             "Priority": "default"
         }
         requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=dati["testo_notifica"].encode('utf-8'), headers=headers)
-        
         print("Ciclo completato con successo!")
         
     except Exception as e:
