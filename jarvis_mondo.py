@@ -53,6 +53,32 @@ def genera_file_audio(testo, nome_file):
     except Exception as e_gtts:
         print(f"Errore generazione audio: {e_gtts}")
         return False
+        
+def send_notification(messaggio):
+    """Gestisce l'invio della notifica ntfy fuori dal main"""
+    if not NTFY_TOPIC:
+        print("ATTENZIONE: Nessun topic Ntfy configurato.")
+        return
+
+    dashboard_url = "https://alessandrocito02-rgb.github.io/Jarvis-Imola/"
+    headers_ntfy = {
+        "Title": "Jarvis - Rassegna Stampa",
+        "Priority": "high",
+        "Tags": "earth_americas,newspaper",
+        "Click": dashboard_url,
+        "Actions": f"view, Apri Jarvis, {dashboard_url}"
+    }
+    
+    try:
+        risp = requests.post(
+            f"https://ntfy.sh/{NTFY_TOPIC.strip()}", 
+            data=messaggio.encode('utf-8'), 
+            headers=headers_ntfy,
+            timeout=10
+        )
+        print(f"Notifica Ntfy inviata [{risp.status_code}]")
+    except Exception as e_ntfy:
+        print(f"Errore Ntfy: {e_ntfy}")
 
 def main():
     argomenti = {
@@ -108,7 +134,7 @@ def main():
     1. Crea ESATTAMENTE 5 elementi nella lista "frasi_hud", uno per ciascuna categoria (Napoli Calcio, Italia, Tecnologia, Intelligenza Artificiale, Auto & Motori).
     2. In ogni blocco, unisci le notizie principali di quella categoria in un unico testo scorrevole ma BREVE (massimo 2 frasi corte per categoria, circa 25-30 parole).
     3. Rendilo un discorso continuo e collegato:
-       - Nel primo blocco inizia salutando ("Buongiorno Signore. Per quanto riguarda il Napoli...")
+       - Nel primeiro blocco inizia salutando ("Buongiorno Signore. Per quanto riguarda il Napoli...")
        - Nei blocchi successivi usa transizioni naturali ("Passando alla cronaca in Italia...", "Sul fronte della tecnologia...", "Nel campo dell'intelligenza artificiale...", "Infine, per il settore auto e motori...").
     4. NON usare emoji, parentesi quadre o simboli dentro "testo". Scrivi solo parole pronunciabili.
     5. Nel campo "url" di ciascuno dei 5 blocchi, inserisci l'URL della notizia principale citata.
@@ -125,7 +151,8 @@ def main():
     }}
     """
     
-    modelli = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
+    # Modelli corretti e funzionanti
+    modelli = ["gemini-3.6-flash-lite", "gemini-3.5-flash"]
     dati = None
     for modello in modelli:
         try:
@@ -149,7 +176,7 @@ def main():
 
     # 2. Genera i file audio MP3 dentro la cartella "audio"
     print("2. Generazione audio ElevenLabs per l'interfaccia web...")
-    os.makedirs("audio", exist_ok=True) # Crea la cartella se non esiste
+    os.makedirs("audio", exist_ok=True)
     
     for i, item in enumerate(dati["frasi_hud"]):
         percorso_mp3 = f"audio/audio_{i}.mp3"
@@ -160,33 +187,16 @@ def main():
     with open("briefing.json", "w", encoding="utf-8") as f:
         json.dump(dati["frasi_hud"], f, ensure_ascii=False, indent=2)
 
-    # 4. Invia l'UNICA notifica Ntfy con il testo e il link diretto al sito
-    if NTFY_TOPIC:
-        try:
-            notifica_raw = dati.get("testo_notifica", "Nuovo briefing disponibile.")
-            if isinstance(notifica_raw, list):
-                messaggio = "\n".join(str(x) for x in notifica_raw)
-            elif isinstance(notifica_raw, dict):
-                messaggio = "\n".join(f"{k}: {v}" for k, v in notifica_raw.items())
-            else:
-                messaggio = str(notifica_raw)
+    # 4. Prepara ed invia la notifica tramite la funzione esterna
+    notifica_raw = dati.get("testo_notifica", "Nuovo briefing disponibile.")
+    if isinstance(notifica_raw, list):
+        messaggio = "\n".join(str(x) for x in notifica_raw)
+    elif isinstance(notifica_raw, dict):
+        messaggio = "\n".join(f"{k}: {v}" for k, v in notifica_raw.items())
+    else:
+        messaggio = str(notifica_raw)
 
-            headers_ntfy = {
-                "Title": "Jarvis - Rassegna Stampa",
-                "Priority": "high",
-                "Tags": "earth_americas,newspaper",
-                "Click": "[https://alessandrocito02-rgb.github.io/Jarvis-Imola/](https://alessandrocito02-rgb.github.io/Jarvis-Imola/)",
-                "Actions": "view, Apri Jarvis, [https://alessandrocito02-rgb.github.io/Jarvis-Imola/](https://alessandrocito02-rgb.github.io/Jarvis-Imola/)"
-            }
-            risp = requests.post(
-                f"[https://ntfy.sh/](https://ntfy.sh/){NTFY_TOPIC.strip()}", 
-                data=messaggio.encode('utf-8'), 
-                headers=headers_ntfy,
-                timeout=10
-            )
-            print(f"Notifica Ntfy inviata [{risp.status_code}]")
-        except Exception as e_ntfy:
-            print(f"Errore Ntfy: {e_ntfy}")
+    send_notification(messaggio)
 
 if __name__ == "__main__":
     main()
