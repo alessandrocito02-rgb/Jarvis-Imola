@@ -73,19 +73,25 @@ def main():
     Sei J.A.R.V.I.S., l'assistente virtuale. Analizza queste notizie divise per categoria:
     {testo_notizie}
     
-    ISTRUZIONI OBBLIGATORIE:
-    1. Devi includere TUTTE le 5 categorie (Napoli Calcio, Italia, Tecnologia, Intelligenza Artificiale, Auto & Motori). Non saltarne nessuna.
-    2. Per OGNI categoria, scegli le 2 notizie più importanti e interessanti (es. infortuni, partite, cronaca importante, nuove uscite tecnologiche, ecc.). Avrai quindi circa 10 notizie in totale.
-    3. Per ciascuna notizia scelta, crea un oggetto separato dentro la lista "frasi_hud".
-    4. Il campo "testo" deve essere un riassunto ben scritto, chiaro e interessante di 2 o 3 frasi (inizia indicando tra parentesi quadre la categoria, es. "[⚽ Napoli] ...").
-    5. Il campo "url" deve contenere l'URL esatto associato a quella notizia.
+    ISTRUZIONI OBBLIGATORIE PER LA SINTESI E IL DISCORSO:
+    1. Crea ESATTAMENTE 5 elementi nella lista "frasi_hud", uno per ciascuna categoria (Napoli Calcio, Italia, Tecnologia, Intelligenza Artificiale, Auto & Motori).
+    2. In ogni blocco, unisci le notizie principali di quella categoria in un unico testo scorrevole ma BREVE (massimo 2 frasi corte per categoria, circa 25-35 parole). Il briefing totale deve durare meno di 1 minuto quando letto ad alta voce.
+    3. Rendilo un discorso continuo e collegato:
+       - Nel primo blocco inizia salutando ("Buongiorno Signore. Per quanto riguarda il Napoli...")
+       - Nei blocchi successivi usa transizioni naturali ("Passando alla cronaca in Italia...", "Sul fronte della tecnologia...", "Nel campo dell'intelligenza artificiale...", "Infine, per il settore auto e motori...").
+    4. NON usare emoji, parentesi quadre o simboli dentro "testo", perché verrà letto da un sintetizzatore vocale. Scrivi solo parole pronunciabili.
+    5. Nel campo "url" di ciascuno dei 5 blocchi, inserisci l'URL della notizia principale che hai citato per quella categoria.
     
-    Restituisci ESCLUSIVAMENTE un oggetto JSON valido con questa esatta struttura:
+    Restituisci ESCLUSIVAMENTE un oggetto JSON valido con questa struttura:
     {{
       "testo_notifica": "Riassunto telegrafico diviso per categorie con emoji per la notifica del telefono.",
       "frasi_hud": [
         {{
-          "testo": "[⚽ Napoli] Il riassunto di 2-3 frasi della notizia...",
+          "testo": "Buongiorno Signore. Per quanto riguarda il Napoli, la squadra si prepara alla prossima sfida mentre si valutano le condizioni degli infortunati.",
+          "url": "https://..."
+        }},
+        {{
+          "testo": "Passando alla cronaca in Italia, oggi l'attenzione è concentrata su...",
           "url": "https://..."
         }}
       ]
