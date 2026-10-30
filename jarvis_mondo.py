@@ -147,12 +147,14 @@ def main():
         print("Impossibile generare il JSON.")
         return
 
-    # 2. Genera i file audio MP3 con ElevenLabs per ciascuna notizia del sito
+    # 2. Genera i file audio MP3 dentro la cartella "audio"
     print("2. Generazione audio ElevenLabs per l'interfaccia web...")
+    os.makedirs("audio", exist_ok=True) # Crea la cartella se non esiste
+    
     for i, item in enumerate(dati["frasi_hud"]):
-        nome_mp3 = f"audio_{i}.mp3"
-        genera_file_audio(item["testo"], nome_mp3)
-        item["audio"] = nome_mp3
+        percorso_mp3 = f"audio/audio_{i}.mp3"
+        genera_file_audio(item["testo"], percorso_mp3)
+        item["audio"] = percorso_mp3
 
     # 3. Salva briefing.json
     with open("briefing.json", "w", encoding="utf-8") as f:
