@@ -159,7 +159,7 @@ def generate_daily_summary(daily_log):
     - Lunghezza massima: 3-4 frasi da leggere a voce. Rispondi ESCLUSIVAMENTE con il testo che dovrai pronunciare.
     """
     
-    modelli_da_provare = ["gemini-1.5-flash", "gemini-1.5-flash-8b"]
+    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite"]
 
     for nome_modello in modelli_da_provare:
         try:
