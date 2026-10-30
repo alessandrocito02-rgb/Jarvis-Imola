@@ -58,7 +58,8 @@ def send_notification(title, message, url=""):
         "Tags": "racing_car,ticket"
     }
     if url:
-        headers["Click"] = url
+        # Usa 'Actions' invece di 'Click' per creare un bottone separato
+        headers_ntfy["Actions"] = f"view, Apri Link, {url}"
     requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=message.encode('utf-8'), headers=headers)
 
 def send_jarvis_voice_ntfy(title, text_message, url=""):
