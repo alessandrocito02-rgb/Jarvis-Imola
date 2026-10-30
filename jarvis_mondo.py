@@ -93,7 +93,7 @@ def main():
     """
     
     # Proviamo i modelli in ordine per sicurezza
-    modelli = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    modelli = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
     dati = None
     
     for modello in modelli:
