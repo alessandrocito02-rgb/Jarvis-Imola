@@ -66,7 +66,7 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
     api_key = os.environ.get("ELEVENLABS_API_KEY")
     
     # INCOLLA QUI IL VOICE ID DI ELEVENLABS
-    voice_id = "IL_TUO_VOICE_ID_QUI" 
+    voice_id = "uI37iVjOs9xsSHtLUP5f" 
     
     if not api_key:
         print("Errore: ELEVENLABS_API_KEY non trovata. Invio solo testo.")
