@@ -3,6 +3,10 @@ name: Jarvis Notizie Mondo
 on:
   workflow_dispatch:
 
+# Aggiungiamo i permessi di scrittura
+permissions:
+  contents: write
+
 jobs:
   notiziario:
     runs-on: ubuntu-latest
@@ -15,5 +19,13 @@ jobs:
       - env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-        # NOTA BENE: Fa partire il nuovo file, non quello della F1!
         run: python jarvis_mondo.py
+        
+      # Nuovo blocco: salva il file JSON su GitHub per farglielo leggere all'HUD
+      - name: Salva i dati per l'interfaccia web
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add briefing.json
+          git commit -m "Aggiornamento dati HUD Jarvis" || echo "Nessuna modifica"
+          git push
