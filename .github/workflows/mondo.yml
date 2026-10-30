@@ -3,7 +3,6 @@ name: Jarvis Notizie Mondo
 on:
   workflow_dispatch:
 
-# Aggiungiamo i permessi di scrittura
 permissions:
   contents: write
 
@@ -22,12 +21,11 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: python jarvis_mondo.py
         
-      # Nuovo blocco: salva il file JSON su GitHub per farglielo leggere all'HUD
       - name: Salva i dati per l'interfaccia web
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git pull origin main --rebase || echo "Nessun conflitto"
           git add briefing.json
-          git commit -m "Aggiornamento automatico briefing.json [skip ci]" || echo "Nessuna modifica"
+          git commit -m "Aggiornamento automatico briefing.json" || echo "Nessuna modifica"
           git push origin main
