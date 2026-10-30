@@ -257,7 +257,7 @@ def main():
     # 2. Controllo Feed RSS con Gemini
     print("Controllo Feed RSS con Jarvis...")
     
-    # Imposta il limite: scarta articoli più vecchi di 1 giorno fa rispetto a ora
+    # Imposta il limite: scarta articoli più vecchi di 2 giorni fa rispetto a ora
     time_limit = datetime.now(timezone.utc) - timedelta(days=2)
 
     for rss_url in RSS_URLS:
