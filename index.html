@@ -242,6 +242,9 @@
             
             archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
             window.speechSynthesis.cancel();
+            // Sblocca l'audio sui browser mobile (iOS/Android) al tocco del bottone
+            const sbloccoMobile = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(sbloccoMobile);
 
             let frasi = [];
             try {
@@ -282,12 +285,14 @@
 
                 const utterance = new SpeechSynthesisUtterance(testo);
                 utterance.lang = 'it-IT';
-                utterance.rate = 1.2;
-                utterance.pitch = 1.0;
+                utterance.rate = 1.1;
+                utterance.pitch = 0.9;
 
                 const voices = window.speechSynthesis.getVoices();
-                const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
-                if (italianVoice) utterance.voice = italianVoice;
+                if (voices.length > 0) {
+                    const italianVoice = voices.find(v => v.lang.startsWith('it'));
+                    if (italianVoice) utterance.voice = italianVoice;
+                }
 
                 utterance.onend = () => {
                     archiveNews(testo, url);
