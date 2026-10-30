@@ -27,6 +27,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git pull origin main --rebase || echo "Nessun conflitto"
           git add briefing.json
-          git commit -m "Aggiornamento dati HUD Jarvis" || echo "Nessuna modifica"
-          git push
+          git commit -m "Aggiornamento automatico briefing.json [skip ci]" || echo "Nessuna modifica"
+          git push origin main
