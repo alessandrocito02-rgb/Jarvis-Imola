@@ -229,22 +229,14 @@
         const activeDisplay = document.getElementById('active-display');
         const archiveLog = document.getElementById('archive-log');
         const hudCore = document.getElementById('hud-core');
+        const playerAudio = new Audio();
 
         startBtn.addEventListener('click', async () => {
-            if (!('speechSynthesis' in window)) {
-                alert("Sintesi vocale non supportata in questo browser.");
-                return;
-            }
-
             startBtn.classList.add('hidden');
             activeDisplay.classList.remove('hidden');
             hudCore.classList.add('is-speaking');
             
             archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
-            window.speechSynthesis.cancel();
-            // Sblocca l'audio sui browser mobile (iOS/Android) al tocco del bottone
-            const sbloccoMobile = new SpeechSynthesisUtterance('');
-            window.speechSynthesis.speak(sbloccoMobile);
 
             let frasi = [];
             try {
@@ -252,20 +244,20 @@
                 if (response.ok) {
                     frasi = await response.json();
                 } else {
-                    frasi = [{ testo: "Attenzione Signore, file di briefing non ancora disponibile sui server.", url: "" }];
+                    frasi = [{ testo: "Attenzione Signore, file di briefing non ancora disponibile.", url: "", audio: "" }];
                 }
             } catch (error) {
                 console.error("Errore di rete:", error);
-                frasi = [{ testo: "Errore di connessione al sistema di briefing.", url: "" }];
+                frasi = [{ testo: "Errore di connessione al sistema di briefing.", url: "", audio: "" }];
             }
 
-            // ECCO IL NUOVO CICLO FOR INSERITO AL POSTO DEL VECCHIO
             for (let i = 0; i < frasi.length; i++) {
-                let testoNotizia = frasi[i].testo || frasi[i]; 
+                let testoNotizia = frasi[i].testo || frasi[i];
                 let urlNotizia = frasi[i].url || "";
+                let fileAudio = frasi[i].audio || `audio_${i}.mp3`;
                 
                 if (typeof testoNotizia === "string" && testoNotizia.trim() !== "") {
-                    await parlaFrase(testoNotizia, urlNotizia);
+                    await parlaConElevenLabs(testoNotizia, urlNotizia, fileAudio);
                     await new Promise(resolve => setTimeout(resolve, 400));
                 }
             }
@@ -278,35 +270,33 @@
             }, 500);
         });
 
-        function parlaFrase(testo, url) {
+        function parlaConElevenLabs(testo, url, fileAudio) {
             return new Promise((resolve) => {
                 activeDisplay.textContent = testo;
                 activeDisplay.classList.add('show');
 
-                const utterance = new SpeechSynthesisUtterance(testo);
-                utterance.lang = 'it-IT';
-                utterance.rate = 1.1;
-                utterance.pitch = 0.9;
+                // Carica il file MP3 di ElevenLabs evitando la cache
+                playerAudio.src = fileAudio + '?t=' + new Date().getTime();
 
-                const voices = window.speechSynthesis.getVoices();
-                if (voices.length > 0) {
-                    const italianVoice = voices.find(v => v.lang.startsWith('it'));
-                    if (italianVoice) utterance.voice = italianVoice;
-                }
-
-                utterance.onend = () => {
+                playerAudio.onended = () => {
                     archiveNews(testo, url);
                     activeDisplay.classList.remove('show');
                     resolve();
                 };
 
-                utterance.onerror = () => {
-                    archiveNews("Errore voce: " + testo, "");
-                    activeDisplay.classList.remove('show');
-                    resolve();
+                playerAudio.onerror = () => {
+                    // Se il file MP3 non viene trovato, mostra comunque la notizia
+                    archiveNews(testo, url);
+                    setTimeout(() => {
+                        activeDisplay.classList.remove('show');
+                        resolve();
+                    }, 3000);
                 };
 
-                window.speechSynthesis.speak(utterance);
+                playerAudio.play().catch(err => {
+                    console.error("Errore riproduzione:", err);
+                    playerAudio.onerror();
+                });
             });
         }
 
@@ -322,10 +312,6 @@
             
             archiveLog.insertBefore(logItem, archiveLog.children[1]);
             archiveLog.scrollTop = 0;
-        }
-
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
     });
     </script>
