@@ -58,8 +58,8 @@ def send_notification(title, message, url=""):
         "Tags": "racing_car,ticket"
     }
     if url:
-        # Usa 'Actions' invece di 'Click' per creare un bottone separato
-        headers_ntfy["Actions"] = f"view, Apri Link, {url}"
+        # CORRETTO: la variabile si chiama 'headers', non 'headers_ntfy'
+        headers["Actions"] = f"view, Apri Link, {url}"
     requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=message.encode('utf-8'), headers=headers)
 
 def send_jarvis_voice_ntfy(title, text_message, url=""):
@@ -157,29 +157,30 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
             os.remove(audio_filename)
 
 
-def analyze_with_jarvis(title, summary):
+def analyze_with_jarvis_batch(testo_notizie):
     prompt = f"""
     Sei Jarvis, un assistente che monitora il Gran Premio di Formula 1 di Imola.
-    Analizza questa notizia:
-    Titolo: {title}
-    Dettagli: {summary}
+    Analizza questo blocco di notizie appena uscite:
 
-    Avvisami (notify = true) SE la notizia riguarda uno di questi temi:
+    {testo_notizie}
+
+    Avvisami (notify = true) SE almeno una notizia riguarda questi temi:
     1. Vendite o prevendite di biglietti (Urgenza: ALTA)
     2. Conferma, annullamento o rinnovo del contratto per il GP a Imola (Urgenza: ALTA)
-    3. Dichiarazioni di ACI, Stefano Domenicali o politici locali sul futuro del GP a Imola (Urgenza: MEDIA)
-    4. Lavori di ammodernamento all'Autodromo Enzo e Dino Ferrari (Urgenza: MEDIA)
-    5. Rischio di cancellazione, stati di allerta o dichiarazioni di pista non idonea per i Gran Premi di Qatar o Abu Dhabi (Urgenza: ALTA)
+    3. Dichiarazioni di ACI, Domenicali o politici locali (Urgenza: MEDIA)
+    4. Lavori di ammodernamento (Urgenza: MEDIA)
+    5. Rischio di cancellazione Qatar o Abu Dhabi (Urgenza: ALTA)
 
     Rispondi ESCLUSIVAMENTE in JSON:
     {{
         "notify": true/false,
         "urgency": "ALTA" o "MEDIA",
-        "short_message": "Riassunto chiaro in italiano (max 2 righe)"
+        "short_message": "Riassunto chiaro in italiano della notizia importante (max 2 righe)"
     }}
     """
     
-    modelli_da_provare = ["gemini-3.6-flash", "gemini-3.5-flash-lite"]
+    # Dato che la 3.6 è bloccata per 18 ore, proviamo prima la 3.5-flash-lite
+    modelli_da_provare = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
     
     for nome_modello in modelli_da_provare:
         try:
@@ -192,10 +193,9 @@ def analyze_with_jarvis(title, summary):
             )
             return json.loads(response.text)
         except Exception as e:
-            print(f"Modello {nome_modello} irraggiungibile ({e}), passo al successivo...")
-            time.sleep(1)
+            print(f"Modello {nome_modello} irraggiungibile: {e}")
+            time.sleep(2)
             
-    print("Tutti i modelli sono attualmente sovraccarichi.")
     return {"notify": False}
 
 def generate_daily_summary(daily_log):
@@ -282,47 +282,51 @@ def main():
     # 2. Controllo Feed RSS con Gemini
     print("Controllo Feed RSS con Jarvis...")
     
-    # Imposta il limite: scarta articoli più vecchi di 2 giorni fa rispetto a ora
     time_limit = datetime.now(timezone.utc) - timedelta(days=2)
+    blocco_notizie = ""
+    link_riferimento = ""
 
     for rss_url in RSS_URLS:
         feed = feedparser.parse(rss_url)
         for entry in feed.entries[:5]:
             article_id = entry.link
             
-            # --- NUOVO CONTROLLO DATA ---
-            # Verifica che il feed abbia una data di pubblicazione
+            # Verifica data
             if hasattr(entry, 'published_parsed') and entry.published_parsed:
-                # Converte il formato data del feed in un formato confrontabile (UTC)
                 article_date = datetime.fromtimestamp(time.mktime(entry.published_parsed), tz=timezone.utc)
-                
                 if article_date < time_limit:
-                    print(f"Scartato (Troppo vecchio): {entry.title}")
-                    continue # Salta e passa al prossimo articolo
-            # ----------------------------
+                    continue
 
             if article_id in new_seen:
                 continue
 
-            print(f"Analizzo: {entry.title}")
-            result = analyze_with_jarvis(entry.title, entry.get("summary", ""))
-
-            if result.get("notify"):
-                send_notification(
-                    title=f"Jarvis F1 Imola ({result.get('urgency', 'INFO')})",
-                    message=result.get("short_message", entry.title),
-                    url=entry.link
-                )
-                any_new_alert = True
-
-            # --- NUOVO: Appunta la notizia nel diario di oggi ---
-            log_entry = f"- {entry.title}"
-            if result.get("notify"):
-                log_entry += f" [RITENUTA IMPORTANTE: {result.get('short_message')}]"
-            state["daily_log"].append(log_entry)
-            # ----------------------------------------------------
+            # Accumula la notizia nel testo per l'API
+            blocco_notizie += f"- Titolo: {entry.title}\n  Dettagli: {entry.get('summary', '')}\n\n"
+            
+            # Segna nel diario
+            state["daily_log"].append(f"- {entry.title}")
+            
+            # Salva il primo link utile da mettere nel bottone della notifica
+            if not link_riferimento:
+                link_riferimento = article_id
 
             new_seen.add(article_id)
+
+    # Se abbiamo raccolto notizie, usiamo 1 SOLA CHIAMATA API per tutto il blocco
+    if blocco_notizie:
+        print("Invio il blocco di notizie a Jarvis (1 singola chiamata API)...")
+        result = analyze_with_jarvis_batch(blocco_notizie)
+
+        if result.get("notify"):
+            send_notification(
+                title=f"Jarvis F1 Imola ({result.get('urgency', 'INFO')})",
+                message=result.get("short_message", "Trovate nuove notizie rilevanti."),
+                url=link_riferimento
+            )
+            any_new_alert = True
+            state["daily_log"].append(f"-> [RITENUTA IMPORTANTE: {result.get('short_message')}]")
+    else:
+        print("Nessuna nuova notizia da analizzare.")
 
    # 3. Report Periodici (09:30, 15:00, 20:00)
     now_rome = datetime.now(ZoneInfo("Europe/Rome"))
