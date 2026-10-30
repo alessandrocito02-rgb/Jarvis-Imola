@@ -16,10 +16,10 @@ RSS_URLS = [
     "https://news.google.com/rss/search?q=Formula+1+Imola+biglietti&hl=it&gl=IT&ceid=IT:it",
     "https://news.google.com/rss/search?q=GP+Imola+F1+conferma+calendario&hl=it&gl=IT&ceid=IT:it",
     "https://news.google.com/rss/search?q=TicketOne+Formula+1+Imola&hl=it&gl=IT&ceid=IT:it",
-    # --- NUOVE RICERCHE ---
     "https://news.google.com/rss/search?q=Autodromo+Imola+Formula+1&hl=it&gl=IT&ceid=IT:it",
     "https://news.google.com/rss/search?q=F1+Imola+Domenicali+ACI&hl=it&gl=IT&ceid=IT:it",
-    "https://news.google.com/rss/search?q=rinnovo+contratto+Imola+F1&hl=it&gl=IT&ceid=IT:it"
+    "https://news.google.com/rss/search?q=F1+cancellazione+Qatar+Abu+Dhabi&hl=it&gl=IT&ceid=IT:it",
+    "https://news.google.com/rss/search?q=Formula+1+pista+non+idonea+allerta&hl=it&gl=IT&ceid=IT:it"
 ]
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -142,8 +142,9 @@ def analyze_with_jarvis(title, summary):
     Avvisami (notify = true) SE la notizia riguarda uno di questi temi:
     1. Vendite o prevendite di biglietti (Urgenza: ALTA)
     2. Conferma, annullamento o rinnovo del contratto per il GP a Imola (Urgenza: ALTA)
-    3. Dichiarazioni di ACI, Stefano Domenicali o politici locali sul futuro del GP (Urgenza: MEDIA)
+    3. Dichiarazioni di ACI, Stefano Domenicali o politici locali sul futuro del GP a Imola (Urgenza: MEDIA)
     4. Lavori di ammodernamento all'Autodromo Enzo e Dino Ferrari (Urgenza: MEDIA)
+    5. Rischio di cancellazione, stati di allerta o dichiarazioni di pista non idonea per i Gran Premi di Qatar o Abu Dhabi (Urgenza: ALTA)
 
     Rispondi ESCLUSIVAMENTE in JSON:
     {{
