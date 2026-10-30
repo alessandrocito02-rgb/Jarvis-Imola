@@ -29,3 +29,4 @@ jobs:
           git add briefing.json audio_*.mp3
           git commit -m "Aggiornamento automatico briefing e voce ElevenLabs" || echo "Nessuna modifica"
           git push origin main
+          git add briefing.json audio/
