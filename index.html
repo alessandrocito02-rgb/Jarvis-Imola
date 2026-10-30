@@ -224,95 +224,102 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const startBtn = document.getElementById('start-btn');
-            const activeDisplay = document.getElementById('active-display');
-            const archiveLog = document.getElementById('archive-log');
-            const hudCore = document.getElementById('hud-core');
+    document.addEventListener('DOMContentLoaded', () => {
+        const startBtn = document.getElementById('start-btn');
+        const activeDisplay = document.getElementById('active-display');
+        const archiveLog = document.getElementById('archive-log');
+        const hudCore = document.getElementById('hud-core');
 
-            startBtn.addEventListener('click', async () => {
-                if (!('speechSynthesis' in window)) {
-                    alert("Sintesi vocale non supportata in questo browser.");
-                    return;
-                }
-
-                startBtn.classList.add('hidden');
-                activeDisplay.classList.remove('hidden');
-                hudCore.classList.add('is-speaking');
-                
-                archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
-                window.speechSynthesis.cancel();
-
-                let frasi = [];
-                try {
-                    // Scarica l'ultimo briefing generato da Python
-                    const response = await fetch('briefing.json?t=' + new Date().getTime());
-                    if (response.ok) {
-                        frasi = await response.json();
-                    } else {
-                        frasi = ["Attenzione Signore, file di briefing non ancora disponibile sui server."];
-                    }
-                } catch (error) {
-                    console.error("Errore di rete:", error);
-                    frasi = ["Errore di connessione al sistema di briefing."];
-                }
-
-                for (let i = 0; i < frasi.length; i++) {
-                    await parlaFrase(frasi[i]);
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                }
-
-                // Fine sequenza
-                activeDisplay.classList.remove('show');
-                setTimeout(() => {
-                    activeDisplay.classList.add('hidden');
-                    startBtn.classList.remove('hidden');
-                    hudCore.classList.remove('is-speaking');
-                }, 500);
-            });
-
-            function parlaFrase(testo) {
-                return new Promise((resolve) => {
-                    activeDisplay.textContent = testo;
-                    activeDisplay.classList.add('show');
-
-                    const utterance = new SpeechSynthesisUtterance(testo);
-                    utterance.lang = 'it-IT';
-                    utterance.rate = 1.0;
-                    utterance.pitch = 0.9;
-
-                    const voices = window.speechSynthesis.getVoices();
-                    const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
-                    if (italianVoice) utterance.voice = italianVoice;
-
-                    utterance.onend = () => {
-                        archiveNews(testo);
-                        activeDisplay.classList.remove('show');
-                        resolve();
-                    };
-
-                    utterance.onerror = () => {
-                        archiveNews("Errore voce: " + testo);
-                        activeDisplay.classList.remove('show');
-                        resolve();
-                    };
-
-                    window.speechSynthesis.speak(utterance);
-                });
+        startBtn.addEventListener('click', async () => {
+            if (!('speechSynthesis' in window)) {
+                alert("Sintesi vocale non supportata in questo browser.");
+                return;
             }
 
-            function archiveNews(text) {
-                const logItem = document.createElement('div');
-                logItem.className = 'archive-item';
-                logItem.textContent = "> " + text;
-                archiveLog.insertBefore(logItem, archiveLog.children[1]);
-                archiveLog.scrollTop = 0;
+            startBtn.classList.add('hidden');
+            activeDisplay.classList.remove('hidden');
+            hudCore.classList.add('is-speaking');
+            
+            archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
+            window.speechSynthesis.cancel();
+
+            let frasi = [];
+            try {
+                const response = await fetch('briefing.json?t=' + new Date().getTime());
+                if (response.ok) {
+                    frasi = await response.json();
+                } else {
+                    // Adattato al nuovo formato oggetto JSON
+                    frasi = [{ testo: "Attenzione Signore, file di briefing non ancora disponibile sui server.", url: "" }];
+                }
+            } catch (error) {
+                console.error("Errore di rete:", error);
+                frasi = [{ testo: "Errore di connessione al sistema di briefing.", url: "" }];
             }
 
-            if (speechSynthesis.onvoiceschanged !== undefined) {
-                speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            for (let i = 0; i < frasi.length; i++) {
+                // Passiamo sia il testo che l'URL alla funzione
+                await parlaFrase(frasi[i].testo, frasi[i].url);
+                await new Promise(resolve => setTimeout(resolve, 800));
             }
+
+            activeDisplay.classList.remove('show');
+            setTimeout(() => {
+                activeDisplay.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+                hudCore.classList.remove('is-speaking');
+            }, 500);
         });
+
+        function parlaFrase(testo, url) {
+            return new Promise((resolve) => {
+                activeDisplay.textContent = testo;
+                activeDisplay.classList.add('show');
+
+                const utterance = new SpeechSynthesisUtterance(testo);
+                utterance.lang = 'it-IT';
+                utterance.rate = 1.0;
+                utterance.pitch = 0.9;
+
+                const voices = window.speechSynthesis.getVoices();
+                const italianVoice = voices.find(v => v.lang.startsWith('it') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')));
+                if (italianVoice) utterance.voice = italianVoice;
+
+                utterance.onend = () => {
+                    archiveNews(testo, url);
+                    activeDisplay.classList.remove('show');
+                    resolve();
+                };
+
+                utterance.onerror = () => {
+                    archiveNews("Errore voce: " + testo, "");
+                    activeDisplay.classList.remove('show');
+                    resolve();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            });
+        }
+
+        function archiveNews(text, url) {
+            const logItem = document.createElement('div');
+            logItem.className = 'archive-item';
+            
+            // Se esiste l'URL, crea un tag anchor (link cliccabile)
+            if (url) {
+                logItem.innerHTML = `> <a href="${url}" target="_blank" style="text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: inherit;">${text}</a>`;
+            } else {
+                logItem.textContent = "> " + text;
+            }
+            
+            archiveLog.insertBefore(logItem, archiveLog.children[1]);
+            archiveLog.scrollTop = 0;
+        }
+
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+    });
     </script>
 </body>
 </html>
