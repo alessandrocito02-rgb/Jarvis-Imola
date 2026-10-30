@@ -18,7 +18,7 @@ jobs:
       - run: pip install google-genai feedparser requests
       - env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_TOPIC_MONDO: ${{ secrets.NTFY_TOPIC_MONDO }}
         run: python jarvis_mondo.py
         
       # Nuovo blocco: salva il file JSON su GitHub per farglielo leggere all'HUD
