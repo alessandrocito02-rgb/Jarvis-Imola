@@ -249,7 +249,6 @@
                 if (response.ok) {
                     frasi = await response.json();
                 } else {
-                    // Adattato al nuovo formato oggetto JSON
                     frasi = [{ testo: "Attenzione Signore, file di briefing non ancora disponibile sui server.", url: "" }];
                 }
             } catch (error) {
@@ -257,10 +256,15 @@
                 frasi = [{ testo: "Errore di connessione al sistema di briefing.", url: "" }];
             }
 
+            // ECCO IL NUOVO CICLO FOR INSERITO AL POSTO DEL VECCHIO
             for (let i = 0; i < frasi.length; i++) {
-                // Passiamo sia il testo che l'URL alla funzione
-                await parlaFrase(frasi[i].testo, frasi[i].url);
-                await new Promise(resolve => setTimeout(resolve, 800));
+                let testoNotizia = frasi[i].testo || frasi[i]; 
+                let urlNotizia = frasi[i].url || "";
+                
+                if (typeof testoNotizia === "string" && testoNotizia.trim() !== "") {
+                    await parlaFrase(testoNotizia, urlNotizia);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
             }
 
             activeDisplay.classList.remove('show');
@@ -305,7 +309,6 @@
             const logItem = document.createElement('div');
             logItem.className = 'archive-item';
             
-            // Se esiste l'URL, crea un tag anchor (link cliccabile)
             if (url) {
                 logItem.innerHTML = `> <a href="${url}" target="_blank" style="text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: inherit;">${text}</a>`;
             } else {
