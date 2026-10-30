@@ -65,8 +65,8 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
     audio_filename = "jarvis_briefing.mp3"
     api_key = os.environ.get("ELEVENLABS_API_KEY")
     
-    # INCOLLA QUI IL VOICE ID COPIATO DAI TRE PALLINI SU ELEVENLABS
-    voice_id = "uI37iVjOs9xsSHtLUP5f" 
+    # INCOLLA QUI IL VOICE ID DI ELEVENLABS
+    voice_id = "IL_TUO_VOICE_ID_QUI" 
     
     if not api_key:
         print("Errore: ELEVENLABS_API_KEY non trovata. Invio solo testo.")
@@ -105,8 +105,10 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
                 "Tags": "robot,racing_car",
                 "Filename": "Jarvis_Briefing.mp3"
             }
+            
             if url:
-                headers_ntfy["Click"] = url
+                # Crea un comodo pulsante separato al posto di far cliccare l'intera notifica
+                headers_ntfy["Actions"] = f"view, Apri Link, {url}"
 
             with open(audio_filename, "rb") as audio_file:
                 requests.post(
@@ -115,13 +117,16 @@ def send_jarvis_voice_ntfy(title, text_message, url=""):
                     headers=headers_ntfy
                 )
             print("Briefing vocale stile Jarvis inviato con successo via ElevenLabs!")
+            
         else:
             print(f"Errore API ElevenLabs ({response.status_code}): {response.text}")
-            # Fallback: se fallisce la voce, manda almeno il testo
+            # Fallback sicuro: se l'API vocale fallisce, ti manda la notifica testuale
             send_notification(title, text_message, url)
             
     except Exception as e:
         print(f"Errore durante la generazione dell'audio: {e}")
+        send_notification(title, text_message, url)
+        
     finally:
         if os.path.exists(audio_filename):
             os.remove(audio_filename)
