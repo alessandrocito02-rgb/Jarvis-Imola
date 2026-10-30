@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from google import genai
 from google.genai import types
-from gtts import gTTS
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
