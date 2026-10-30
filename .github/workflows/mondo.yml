@@ -25,8 +25,7 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull origin main --rebase || echo "Nessun conflitto"
-          git add briefing.json audio_*.mp3
-          git commit -m "Aggiornamento automatico briefing e voce ElevenLabs" || echo "Nessuna modifica"
-          git push origin main
           git add briefing.json audio/
+          git commit -m "Aggiornamento automatico briefing e voce ElevenLabs" || echo "Nessuna modifica"
+          git pull origin main --rebase || echo "Nessun conflitto"
+          git push origin main
