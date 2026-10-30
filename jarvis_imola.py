@@ -63,34 +63,65 @@ def send_notification(title, message, url=""):
 
 def send_jarvis_voice_ntfy(title, text_message, url=""):
     audio_filename = "jarvis_briefing.mp3"
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    
+    # INCOLLA QUI IL VOICE ID COPIATO DAI TRE PALLINI SU ELEVENLABS
+    voice_id = "uI37iVjOs9xsSHtLUP5f" 
+    
+    if not api_key:
+        print("Errore: ELEVENLABS_API_KEY non trovata. Invio solo testo.")
+        send_notification(title, text_message, url)
+        return
+
+    url_eleven = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    
+    headers_eleven = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": api_key
+    }
+    
+    data_eleven = {
+        "text": text_message,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.65,
+            "similarity_boost": 0.85,
+            "style": 0.0,
+            "use_speaker_boost": True
+        }
+    }
     
     try:
-        # Genera la sintesi vocale in italiano
-        tts = gTTS(text=text_message, lang='it', slow=False)
-        tts.save(audio_filename)
+        response = requests.post(url_eleven, json=data_eleven, headers=headers_eleven)
         
-        headers = {
-            "Title": title.encode('utf-8'),
-            "Priority": "high",
-            "Tags": "robot,racing_car",  # Icona Jarvis/Robot su ntfy
-            "Filename": "Jarvis_Briefing.mp3"
-        }
-        
-        if url:
-            headers["Click"] = url
-
-        # Carica il file audio direttamente nell'allegato della notifica
-        with open(audio_filename, "rb") as audio_file:
-            response = requests.post(
-                f"https://ntfy.sh/{NTFY_TOPIC}",
-                data=audio_file,
-                headers=headers
-            )
+        if response.status_code == 200:
+            with open(audio_filename, "wb") as f:
+                f.write(response.content)
             
-        print(f"Briefing vocale di Jarvis inviato con successo (Status {response.status_code})")
-        
+            headers_ntfy = {
+                "Title": title.encode('utf-8'),
+                "Priority": "high",
+                "Tags": "robot,racing_car",
+                "Filename": "Jarvis_Briefing.mp3"
+            }
+            if url:
+                headers_ntfy["Click"] = url
+
+            with open(audio_filename, "rb") as audio_file:
+                requests.post(
+                    f"https://ntfy.sh/{NTFY_TOPIC}",
+                    data=audio_file,
+                    headers=headers_ntfy
+                )
+            print("Briefing vocale stile Jarvis inviato con successo via ElevenLabs!")
+        else:
+            print(f"Errore API ElevenLabs ({response.status_code}): {response.text}")
+            # Fallback: se fallisce la voce, manda almeno il testo
+            send_notification(title, text_message, url)
+            
     except Exception as e:
-        print(f"Errore durante l'invio del briefing vocale: {e}")
+        print(f"Errore durante la generazione dell'audio: {e}")
     finally:
         if os.path.exists(audio_filename):
             os.remove(audio_filename)
