@@ -1,318 +1,2136 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. - Daily Briefing</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font futuristici -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --neon-blue: #00f3ff;
-            --dark-bg: #02040a;
-        }
-
-        body {
-            background-color: var(--dark-bg);
-            color: var(--neon-blue);
-            font-family: 'Rajdhani', sans-serif;
-            background-image: 
-                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.08) 0%, transparent 70%),
-                linear-gradient(rgba(0,243,255,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,243,255,0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-            overflow: hidden;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .orbitron { font-family: 'Orbitron', sans-serif; }
-        .text-glow { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); }
-
-        /* --- HUD Rings --- */
-        .hud-container {
-            position: relative;
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            perspective: 1000px;
-        }
-
-        .ring {
-            position: absolute;
-            border-radius: 50%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-
-        .ring-1 {
-            width: 80vmin; height: 80vmin;
-            border: 2px solid rgba(0, 243, 255, 0.1);
-            border-top: 4px solid var(--neon-blue);
-            border-left: 2px solid rgba(0, 243, 255, 0.5);
-            animation: spin 12s linear infinite;
-        }
-
-        .ring-2 {
-            width: 72vmin; height: 72vmin;
-            border: 2px dashed var(--neon-blue);
-            opacity: 0.5;
-            animation: spin-reverse 18s linear infinite;
-        }
-
-        .ring-3 {
-            width: 60vmin; height: 60vmin;
-            border: 4px solid transparent;
-            border-bottom: 4px solid var(--neon-blue);
-            border-right: 4px solid rgba(0, 243, 255, 0.8);
-            animation: spin 8s ease-in-out infinite alternate;
-        }
-        
-        .ring-4 {
-            width: 45vmin; height: 45vmin;
-            border: 2px dotted rgba(0, 243, 255, 0.4);
-            animation: spin-reverse 25s linear infinite;
-        }
-
-        .is-speaking .ring-1 { animation: spin 4s linear infinite; }
-        .is-speaking .ring-2 { animation: spin-reverse 6s linear infinite; }
-        .is-speaking .ring-3 { animation: spin 3s ease-in-out infinite alternate; }
-
-        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes spin-reverse { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
-
-        /* Central Overlay & Button */
-        .center-content {
-            position: absolute;
-            z-index: 10;
-            text-align: center;
-            width: 70vmin;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .jarvis-btn {
-            background: rgba(0, 243, 255, 0.1);
-            border: 2px solid var(--neon-blue);
-            color: var(--neon-blue);
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            box-shadow: 0 0 15px var(--neon-blue) inset, 0 0 20px var(--neon-blue);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }
-
-        .jarvis-btn:hover {
-            background: var(--neon-blue);
-            color: var(--dark-bg);
-            box-shadow: 0 0 30px var(--neon-blue) inset, 0 0 40px var(--neon-blue);
-            transform: scale(1.05);
-        }
-
-        .active-text {
-            font-size: 1.6rem;
-            line-height: 1.3;
-            font-weight: 600;
-            opacity: 0;
-            transform: scale(0.9);
-            transition: all 0.5s ease;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px var(--neon-blue);
-            background: rgba(2, 4, 10, 0.7);
-            padding: 25px;
-            border-radius: 10px;
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .active-text.show {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Archive Section */
-        .archive-section {
-            height: 30vh;
-            width: 100%;
-            background: linear-gradient(to top, rgba(0, 243, 255, 0.05), transparent);
-            border-top: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 20;
-        }
-
-        .archive-item {
-            font-family: monospace;
-            font-size: 0.95rem;
-            color: rgba(0, 243, 255, 0.7);
-            border-left: 2px solid var(--neon-blue);
-            padding-left: 10px;
-            background: rgba(0, 243, 255, 0.05);
-            padding: 10px;
-            animation: slideUp 0.3s ease-out forwards;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-            background-size: 100% 4px;
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        .hud-header {
-            position: absolute;
-            top: 0; left: 0; width: 100%;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            z-index: 20;
-            pointer-events: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>J.A.R.V.I.S. — Unified Neural HUD</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Babel per compilare JSX al volo nel browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Import Map per React, Three.js e Lucide Icons -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.3.1",
+        "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+        "three": "https://esm.sh/three@0.168.0",
+        "lucide-react": "https://esm.sh/lucide-react@0.446.0?external=react"
+      }
+    }
+  </script>
 </head>
-<body>
-    <div class="scanlines"></div>
+<body class="bg-[#05090f] overflow-hidden m-0 p-0">
+  <div id="root"></div>
 
-    <header class="hud-header">
-        <div class="orbitron text-2xl md:text-3xl font-bold text-glow tracking-widest">J.A.R.V.I.S.</div>
-        <div class="flex items-center gap-2">
-            <div class="w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00f3ff]"></div>
-            <span class="text-xs md:text-sm tracking-widest text-cyan-400/80 font-mono">SYS.ONLINE</span>
-        </div>
-    </header>
+  <script type="text/babel" data-type="module">
+    import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
+    import { createRoot } from "react-dom/client";
+    import * as THREE from "three";
+    import {
+      Activity,
+      Cpu,
+      Shield,
+      Radio,
+      Terminal,
+      Zap,
+      Volume2,
+      VolumeX,
+      Wifi,
+      Eye,
+      Lock,
+      Code,
+      Database,
+      Sparkles,
+      Play,
+      Square,
+      AlertTriangle,
+      CheckCircle2,
+      Compass,
+      Layers,
+      Send,
+      Bell,
+      BellOff,
+      Touchpad,
+    } from "lucide-react";
 
-    <div class="hud-container" id="hud-core">
-        <div class="ring ring-1"></div>
-        <div class="ring ring-2"></div>
-        <div class="ring ring-3"></div>
-        <div class="ring ring-4"></div>
+    // ============================================================================
+    // PROCEDURAL WEB AUDIO API SCI-FI SOUND SYNTHESIZER
+    // ============================================================================
+    class SciFiSoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
 
-        <div class="center-content">
-            <button id="start-btn" class="jarvis-btn orbitron font-bold">
-                Avvia Protocollo
-            </button>
-            <div id="active-display" class="active-text hidden">
-                Inizializzazione sistemi...
-            </div>
-        </div>
-    </div>
+      init() {
+        if (!this.enabled) return null;
+        if (!this.ctx && typeof window !== "undefined") {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume().catch(() => {});
+        }
+        return this.ctx;
+      }
 
-    <div class="archive-section" id="archive-log">
-        <div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>
-    </div>
+      click(freq = 1320) {
+        const ctx = this.init();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.45, now + 0.045);
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const startBtn = document.getElementById('start-btn');
-        const activeDisplay = document.getElementById('active-display');
-        const archiveLog = document.getElementById('archive-log');
-        const hudCore = document.getElementById('hud-core');
-        const playerAudio = new Audio();
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
-        startBtn.addEventListener('click', async () => {
-            startBtn.classList.add('hidden');
-            activeDisplay.classList.remove('hidden');
-            hudCore.classList.add('is-speaking');
-            
-            archiveLog.innerHTML = '<div class="text-cyan-500/40 font-mono text-xs text-center mb-2">/// ARCHIVIO SESSIONE ///</div>';
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.055);
+        } catch {}
+      }
 
-            let frasi = [];
-            try {
-                const response = await fetch('briefing.json?t=' + new Date().getTime());
-                if (response.ok) {
-                    frasi = await response.json();
-                } else {
-                    frasi = [{ testo: "Attenzione Signore, file di briefing non ancora disponibile.", url: "", audio: "" }];
-                }
-            } catch (error) {
-                console.error("Errore di rete:", error);
-                frasi = [{ testo: "Errore di connessione al sistema di briefing.", url: "", audio: "" }];
-            }
+      protocol(isOverdrive = false) {
+        const ctx = this.init();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const notes = isOverdrive ? [220, 277.18, 329.63, 440] : [587.33, 880, 1174.66];
+          notes.forEach((f, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = isOverdrive ? "sawtooth" : "triangle";
+            osc.frequency.setValueAtTime(f, now + idx * 0.045);
 
-            for (let i = 0; i < frasi.length; i++) {
-                let testoNotizia = frasi[i].testo || frasi[i];
-                let urlNotizia = frasi[i].url || "";
-                // ECCOLA QUI: cerca il file dentro la cartella "audio/"
-                let fileAudio = frasi[i].audio || `audio/audio_${i}.mp3`;
-                
-                if (typeof testoNotizia === "string" && testoNotizia.trim() !== "") {
-                    await parlaConElevenLabs(testoNotizia, urlNotizia, fileAudio);
-                    await new Promise(resolve => setTimeout(resolve, 400));
-                }
-            }
+            gain.gain.setValueAtTime(isOverdrive ? 0.045 : 0.055, now + idx * 0.045);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + idx * 0.045 + 0.22);
 
-            activeDisplay.classList.remove('show');
-            setTimeout(() => {
-                activeDisplay.classList.add('hidden');
-                startBtn.classList.remove('hidden');
-                hudCore.classList.remove('is-speaking');
-            }, 500);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.045);
+            osc.stop(now + idx * 0.045 + 0.24);
+          });
+        } catch {}
+      }
+
+      radarPing() {
+        const ctx = this.init();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(1760, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.28);
+
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.32);
+        } catch {}
+      }
+
+      shockwave() {
+        const ctx = this.init();
+        if (!ctx) return;
+        try {
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(150, now);
+          osc.frequency.exponentialRampToValueAtTime(980, now + 0.18);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.42);
+
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        } catch {}
+      }
+    }
+
+    const sfx = new SciFiSoundEngine();
+
+    // ============================================================================
+    // SHARED VOICE & NEURAL REACTIVITY STORE (60FPS SYNC WITH THREE.JS)
+    // ============================================================================
+    const voice = {
+      active: false,
+      speaking: false,
+      muted: false,
+      level: 0.08,
+      pulse: 0,
+      protocolBoost: 0,
+      overrideMode: false,
+      shockwaveTime: 0,
+    };
+
+    function tickVoice(dt, t) {
+      voice.pulse = Math.max(0, voice.pulse - dt * 1.65);
+      voice.protocolBoost = Math.max(0, voice.protocolBoost - dt * 0.65);
+      voice.shockwaveTime = Math.max(0, voice.shockwaveTime - dt * 1.4);
+
+      const baseIdle = voice.active ? 0.22 : 0.06;
+      const speechMod = voice.speaking
+        ? 0.45 +
+          Math.sin(t * 17) * 0.16 +
+          Math.cos(t * 29) * 0.12 +
+          Math.sin(t * 7.3) * 0.1
+        : 0;
+      const target = Math.min(
+        1.35,
+        baseIdle + speechMod + voice.pulse + voice.protocolBoost + (voice.overrideMode ? 0.35 : 0)
+      );
+
+      voice.level += (target - voice.level) * Math.min(1, dt * 10);
+    }
+
+    // ============================================================================
+    // DATA CONSTANTS
+    // ============================================================================
+    const DEFAULT_BRIEFING = [
+      { testo: "Buongiorno Signore. Tutti i sistemi sono operativi.", url: "", audio: "audio/audio_0.mp3" },
+      { testo: "Rete neurale sincronizzata al novantotto percento. Latenza quantistica nella norma.", url: "", audio: "audio/audio_1.mp3" },
+    ];
+
+    const DEFAULT_NEWS = [
+      "SAT-7 riallineato su orbita geostazionaria",
+      "Reattore Ark: output stabile 3.2 GJ/s",
+      "Borsa di Tokyo +0.42% in apertura",
+      "Aggiornamento firmware Mark LXXXV disponibile",
+      "Traffico aereo Malpensa: 14 voli in coda",
+      "Rilevato picco di neutrini nel settore 4G",
+      "Protocollo Veronica in standby",
+    ];
+
+    const PROTOCOLS = {
+      INIT: {
+        code: "INIT",
+        label: "Inizializzazione",
+        speech: "Inizializzazione sequenza sinaptica primaria. Tutti i 520 nodi neurali rispondono.",
+        log: "PROTOCOLLO INIT: Sincronizzazione spirale aurea completata.",
+        boost: 0.65,
+      },
+      SCAN: {
+        code: "SCAN",
+        label: "Scansione 360",
+        speech: "Scansione perimetrale a 360 gradi avviata. Rilevati 4 tracciati orbitali nel settore.",
+        log: "PROTOCOLLO SCAN: Sweep radar R-360 in modalità alta frequenza.",
+        boost: 0.55,
+      },
+      DIAG: {
+        code: "DIAG",
+        label: "Diagnostica",
+        speech: "Diagnostica euristica completata. Integrità strutturale al novantanove virgola quattro percento.",
+        log: "PROTOCOLLO DIAG: Tutte le subroutine operano nei parametri nominali.",
+        boost: 0.45,
+      },
+      NET: {
+        code: "NET",
+        label: "Uplink Rete",
+        speech: "Uplink satellitare ottimizzato. Crittografia quantistica attiva su tutti i canali.",
+        log: "PROTOCOLLO NET: Latenza uplink ridotta a 0.42 ms. Tunnel sicuro attivo.",
+        boost: 0.5,
+      },
+      SEC: {
+        code: "SEC",
+        label: "Sicurezza",
+        speech: "Protocollo difesa attivo. Firewall perimetrale in stato di massima allerta.",
+        log: "PROTOCOLLO SEC: Scudi perimetrali attivi. Tracciamento IP ostili.",
+        boost: 0.6,
+      },
+      OVR: {
+        code: "OVR",
+        label: "Override Core",
+        speech: "Override manuale autorizzato. Potenza reattore Ark reindirizzata ai core neurali.",
+        log: "ALERT OVR: Sovraccarico controllato sinapsi. Modalità Ambra attivata.",
+        boost: 0.95,
+      },
+      PWR: {
+        code: "PWR",
+        label: "Bilanciamento",
+        speech: "Bilanciamento energetico completato. Output stabile a 3 virgola 2 Gigajoule al secondo.",
+        log: "PROTOCOLLO PWR: Flusso energetico reattore Ark stabilizzato.",
+        boost: 0.5,
+      },
+    };
+
+    const INITIAL_AGENTS = [
+      { id: "CORE", name: "CORE", role: "KERNEL QUANTISTICO", active: true, icon: Cpu },
+      { id: "VISION", name: "VISION", role: "RICONOSCIMENTO OTTICO", active: false, icon: Eye },
+      { id: "SECURITY", name: "SECURITY", role: "DIFESA PERIMETRALE", active: true, icon: Shield },
+      { id: "AUTOMATION", name: "AUTOMATION", role: " CONTROLLO DOMOTICO", active: true, icon: Zap },
+      { id: "MEMORY", name: "MEMORY", role: "ARCHIVIO SINAPTICO", active: false, icon: Database },
+      { id: "VOICE", name: "VOICE", role: "SINTESI VOCALE ELEVENLABS", active: true, icon: Volume2 },
+      { id: "PYTHON", name: "PYTHON", role: "MOTORE EURISTICO RSS", active: true, icon: Code },
+    ];
+
+    const INITIAL_DIAG_BLOCKS = [
+      {
+        id: "proc-a",
+        title: "PROC. 0x88FFA",
+        desc: "Ottimizzazione percorsi euristici nel settore 4. Latenza sinaptica -14%.",
+        isOrange: true,
+        speech: "Processo 0x88FFA attivo. Ottimizzazione dei percorsi euristici nel settore quattro.",
+      },
+      {
+        id: "sec-fw",
+        title: "SEC. FIREWALL",
+        desc: "Ping in ingresso bloccato da IP sconosciuto. Tracciamento rotta orbitale.",
+        isOrange: false,
+        speech: "Firewall perimetrale: tentativo di accesso esterno isolato e neutralizzato.",
+      },
+      {
+        id: "mem-alloc",
+        title: "MEM. ALLOC",
+        desc: "Spostamento di 4TB sulla modellazione predittiva a breve termine.",
+        isOrange: true,
+        speech: "Allocazione memoria aggiornata: quattro Terabyte dedicati al modello predittivo.",
+      },
+      {
+        id: "sys-upd",
+        title: "SYS. UPDATE",
+        desc: "Patch del kernel neurale v9.1.4 verificata. Firma crittografica valida.",
+        isOrange: false,
+        speech: "Aggiornamento di sistema verificato. Kernel neurale versione nove punto uno attivo.",
+      },
+    ];
+
+    const RADAR_TARGETS = [
+      {
+        id: "SAT-7",
+        x: 28,
+        y: 34,
+        sector: "GEO-NORTH",
+        alt: "35.786 KM",
+        status: "LOCKED",
+        speech: "Bersaglio SAT-7 agganciato. Orbita geostazionaria stabile a 35 mila chilometri. Telemetria nominale.",
+      },
+      {
+        id: "DRN-2",
+        x: 72,
+        y: 26,
+        sector: "SEC-04",
+        alt: "14.200 M",
+        status: "PATROL",
+        speech: "Drone da ricognizione DRN-2 in pattugliamento nel settore quattro. Nessuna minaccia ostile rilevata.",
+      },
+      {
+        id: "ORB-9",
+        x: 60,
+        y: 74,
+        sector: "LEO-EAST",
+        alt: "540 KM",
+        status: "RELAY",
+        speech: "Nodo orbitale ORB-9 attivo. Banda di trasmissione quantistica operativa al novantotto percento.",
+      },
+      {
+        id: "ARK-1",
+        x: 23,
+        y: 66,
+        sector: "CORE-HQ",
+        alt: "GROUND",
+        status: "3.2 GJ/s",
+        speech: "Generatore primario Ark Uno: erogazione stabile a tre virgola due Gigajoule al secondo.",
+      },
+    ];
+
+    const QUICK_CHIPS = [
+      {
+        label: "Stato Reattore",
+        query: "Stato Reattore",
+        response: "Reattore Ark al 98% di efficienza. Output termico 41 gradi Celsius, erogazione stabile a 3,2 Gigajoule al secondo.",
+        log: "QUERY: Stato Reattore Ark verificato (3.2 GJ/s).",
+      },
+      {
+        label: "Scansione Satelliti",
+        query: "Scansione Satelliti",
+        response: "Tutti i satelliti Stark sono allineati. SAT-7 e ORB-9 garantiscono copertura globale con latenza di 0,42 millisecondi.",
+        log: "QUERY: Costellazione satellitare Stark allineata.",
+      },
+      {
+        label: "Analisi Minacce",
+        query: "Analisi Minacce",
+        response: "Scansione sicurezza completata: zero intrusioni rilevate. Firewall quantistico attivo su tutti i 16 core neurali.",
+        log: "QUERY: Analisi minacce perimetrali negativa.",
+      },
+      {
+        label: "Meteo & Voli",
+        query: "Meteo & Voli",
+        response: "Cielo sereno, 18 gradi, visibilità ottima. Traffico aereo su Malpensa regolare con 14 voli monitorati.",
+        log: "QUERY: Bollettino meteo e traffico aereo aggiornato.",
+      },
+    ];
+
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    // ============================================================================
+    // 3D GEOMETRY & GLOW TEXTURE HELPERS FOR NEURAL SPHERE
+    // ============================================================================
+    const N_NODES = 520;
+    const K_NEIGHBORS = 3;
+    const CYAN_COLOR = new THREE.Color("#3ee8ff");
+    const AMBER_COLOR = new THREE.Color("#ffb347");
+
+    function buildNeuralSphereData() {
+      const base = new Float32Array(N_NODES * 3);
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      for (let i = 0; i < N_NODES; i++) {
+        const y = 1 - (i / (N_NODES - 1)) * 2;
+        const r = Math.sqrt(1 - y * y);
+        const th = golden * i;
+        base[i * 3] = Math.cos(th) * r;
+        base[i * 3 + 1] = y;
+        base[i * 3 + 2] = Math.sin(th) * r;
+      }
+
+      const pairs = [];
+      const seen = new Set();
+      for (let i = 0; i < N_NODES; i++) {
+        const d = [];
+        for (let j = 0; j < N_NODES; j++) {
+          if (i === j) continue;
+          const dx = base[i * 3] - base[j * 3];
+          const dy = base[i * 3 + 1] - base[j * 3 + 1];
+          const dz = base[i * 3 + 2] - base[j * 3 + 2];
+          d.push([dx * dx + dy * dy + dz * dz, j]);
+        }
+        d.sort((a, b) => a[0] - b[0]);
+        for (let k = 0; k < K_NEIGHBORS; k++) {
+          const j = d[k][1];
+          const key = i < j ? `${i}-${j}` : `${j}-${i}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            pairs.push(i, j);
+          }
+        }
+      }
+
+      for (let s = 0; s < 70; s++) {
+        pairs.push((Math.random() * N_NODES) | 0, (Math.random() * N_NODES) | 0);
+      }
+
+      const phase = new Float32Array(N_NODES);
+      for (let i = 0; i < N_NODES; i++) {
+        phase[i] = Math.random() * Math.PI * 2;
+      }
+
+      return { base, pairs: new Uint16Array(pairs), phase };
+    }
+
+    function createGlowTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext("2d");
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+      grad.addColorStop(0.25, "rgba(62, 232, 255, 0.85)");
+      grad.addColorStop(0.6, "rgba(0, 180, 255, 0.25)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // ============================================================================
+    // THREE.JS WEBGL NEURAL SPHERE COMPONENT
+    // ============================================================================
+    function NeuralSphereCanvas({ onSphereTap }) {
+      const mountRef = useRef(null);
+      const tapCallbackRef = useRef(onSphereTap);
+
+      useEffect(() => {
+        tapCallbackRef.current = onSphereTap;
+      }, [onSphereTap]);
+
+      useEffect(() => {
+        const container = mountRef.current;
+        if (!container) return;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+          45,
+          container.clientWidth / Math.max(1, container.clientHeight),
+          0.1,
+          100
+        );
+
+        const updateCameraForViewport = (w, h) => {
+          const aspect = w / Math.max(1, h);
+          camera.aspect = aspect;
+          const isMobileScreen = w < 768;
+          if (aspect < 0.85) {
+            camera.position.z = Math.min(11.8, Math.max(8.8, 6.1 / Math.max(0.48, aspect)));
+            camera.position.y = -0.35;
+          } else if (isMobileScreen) {
+            camera.position.z = 8.4;
+            camera.position.y = -0.15;
+          } else {
+            camera.position.z = 7.2;
+            camera.position.y = 0;
+          }
+          camera.updateProjectionMatrix();
+        };
+
+        updateCameraForViewport(container.clientWidth, container.clientHeight);
+
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+          powerPreference: "high-performance",
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.innerHTML = "";
+        container.appendChild(renderer.domElement);
+
+        const glowTex = createGlowTexture();
+        const masterGroup = new THREE.Group();
+        scene.add(masterGroup);
+
+        const brainGroup = new THREE.Group();
+        masterGroup.add(brainGroup);
+
+        const { base, pairs, phase } = buildNeuralSphereData();
+        const pos = new Float32Array(N_NODES * 3);
+        const linePos = new Float32Array(pairs.length * 3);
+        const lineCol = new Float32Array(pairs.length * 3);
+
+        const ptsGeo = new THREE.BufferGeometry();
+        ptsGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        const ptsMat = new THREE.PointsMaterial({
+          color: CYAN_COLOR,
+          map: glowTex,
+          size: 0.11,
+          sizeAttenuation: true,
+          transparent: true,
+          opacity: 0.95,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const ptsMesh = new THREE.Points(ptsGeo, ptsMat);
+        brainGroup.add(ptsMesh);
+
+        const linesGeo = new THREE.BufferGeometry();
+        linesGeo.setAttribute("position", new THREE.BufferAttribute(linePos, 3));
+        linesGeo.setAttribute("color", new THREE.BufferAttribute(lineCol, 3));
+        const linesMat = new THREE.LineBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.78,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const linesMesh = new THREE.LineSegments(linesGeo, linesMat);
+        brainGroup.add(linesMesh);
+
+        const icoGeo = new THREE.IcosahedronGeometry(1, 2);
+        const icoMat = new THREE.MeshBasicMaterial({
+          color: CYAN_COLOR,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.45,
+          blending: THREE.AdditiveBlending,
+        });
+        const coreMesh = new THREE.Mesh(icoGeo, icoMat);
+        brainGroup.add(coreMesh);
+
+        const innerSphereGeo = new THREE.SphereGeometry(0.26, 32, 32);
+        const innerSphereMat = new THREE.MeshBasicMaterial({
+          color: new THREE.Color("#e0ffff"),
+          transparent: true,
+          opacity: 0.95,
+        });
+        const innerSphere = new THREE.Mesh(innerSphereGeo, innerSphereMat);
+        brainGroup.add(innerSphere);
+
+        const spriteMat = new THREE.SpriteMaterial({
+          map: glowTex,
+          color: CYAN_COLOR,
+          transparent: true,
+          opacity: 0.65,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const coreHalo = new THREE.Sprite(spriteMat);
+        coreHalo.scale.set(2.4, 2.4, 1);
+        brainGroup.add(coreHalo);
+
+        const shockGeo = new THREE.RingGeometry(0.3, 0.42, 64);
+        const shockMat = new THREE.MeshBasicMaterial({
+          color: AMBER_COLOR,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const shockRing = new THREE.Mesh(shockGeo, shockMat);
+        scene.add(shockRing);
+
+        const ringConfigs = [
+          { r: 2.3, tilt: [1.3, 0, 0.2], speed: 0.3, col: CYAN_COLOR, arc: Math.PI * 1.6, tube: 0.013 },
+          { r: 2.55, tilt: [0.4, 0.6, 0], speed: -0.22, col: AMBER_COLOR, arc: Math.PI * 0.95, tube: 0.015 },
+          { r: 2.8, tilt: [1.8, 0.3, 0.5], speed: 0.15, col: CYAN_COLOR, arc: Math.PI * 2, tube: 0.006 },
+          { r: 3.1, tilt: [Math.PI / 2, 0, 0], speed: -0.12, col: CYAN_COLOR, arc: Math.PI * 1.25, tube: 0.012 },
+        ];
+
+        const ringMeshes = [];
+        const ringsGroup = new THREE.Group();
+        masterGroup.add(ringsGroup);
+
+        ringConfigs.forEach((cfg) => {
+          const pivot = new THREE.Group();
+          pivot.rotation.set(cfg.tilt[0], cfg.tilt[1], cfg.tilt[2]);
+          const tGeo = new THREE.TorusGeometry(cfg.r, cfg.tube, 8, 160, cfg.arc);
+          const tMat = new THREE.MeshBasicMaterial({
+            color: cfg.col,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+          });
+          const mesh = new THREE.Mesh(tGeo, tMat);
+          pivot.add(mesh);
+          ringsGroup.add(pivot);
+          ringMeshes.push({ mesh, cfg, mat: tMat });
         });
 
-        function parlaConElevenLabs(testo, url, fileAudio) {
-            return new Promise((resolve) => {
-                activeDisplay.textContent = testo;
-                activeDisplay.classList.add('show');
-
-                playerAudio.src = fileAudio + '?t=' + new Date().getTime();
-
-                playerAudio.onended = () => {
-                    archiveNews(testo, url);
-                    activeDisplay.classList.remove('show');
-                    resolve();
-                };
-
-                playerAudio.onerror = () => {
-                    archiveNews(testo, url);
-                    setTimeout(() => {
-                        activeDisplay.classList.remove('show');
-                        resolve();
-                    }, 3000);
-                };
-
-                playerAudio.play().catch(err => {
-                    console.error("Errore riproduzione:", err);
-                    playerAudio.onerror();
-                });
-            });
+        const dustCount = 1500;
+        const dustArr = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustArr.length; i++) {
+          dustArr[i] = (Math.random() - 0.5) * 28;
         }
+        const dustGeo = new THREE.BufferGeometry();
+        dustGeo.setAttribute("position", new THREE.BufferAttribute(dustArr, 3));
+        const dustMat = new THREE.PointsMaterial({
+          color: "#2a8fb0",
+          size: 0.035,
+          transparent: true,
+          opacity: 0.6,
+          blending: THREE.AdditiveBlending,
+        });
+        const dustPoints = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustPoints);
 
-        function archiveNews(text, url) {
-            const logItem = document.createElement('div');
-            logItem.className = 'archive-item';
-            
-            if (url) {
-                logItem.innerHTML = `> <a href="${url}" target="_blank" style="text-decoration: underline; text-underline-offset: 3px; cursor: pointer; color: inherit;">${text}</a>`;
-            } else {
-                logItem.textContent = "> " + text;
+        const interaction = {
+          pointerX: 0,
+          pointerY: 0,
+          targetPointerX: 0,
+          targetPointerY: 0,
+          isDragging: false,
+          dragStartX: 0,
+          dragStartY: 0,
+          lastX: 0,
+          lastY: 0,
+          userRotY: 0,
+          userRotX: 0,
+          velY: 0,
+          velX: 0,
+          downTime: 0,
+        };
+
+        const onPointerDown = (clientX, clientY) => {
+          interaction.isDragging = true;
+          interaction.dragStartX = clientX;
+          interaction.dragStartY = clientY;
+          interaction.lastX = clientX;
+          interaction.lastY = clientY;
+          interaction.downTime = performance.now();
+        };
+
+        const onPointerMoveCoords = (clientX, clientY) => {
+          const rect = container.getBoundingClientRect();
+          if (rect.width && rect.height) {
+            interaction.targetPointerX = ((clientX - rect.left) / rect.width) * 2 - 1;
+            interaction.targetPointerY = -(((clientY - rect.top) / rect.height) * 2 - 1);
+          }
+          if (interaction.isDragging) {
+            const dx = clientX - interaction.lastX;
+            const dy = clientY - interaction.lastY;
+            interaction.lastX = clientX;
+            interaction.lastY = clientY;
+            interaction.velY = dx * 0.0075;
+            interaction.velX = dy * 0.0065;
+            interaction.userRotY += interaction.velY;
+            interaction.userRotX = Math.max(-1.1, Math.min(1.1, interaction.userRotX + interaction.velX));
+          }
+        };
+
+        const onPointerUp = (clientX, clientY) => {
+          if (!interaction.isDragging) return;
+          interaction.isDragging = false;
+          const moveDist = Math.hypot(
+            clientX - interaction.dragStartX,
+            clientY - interaction.dragStartY
+          );
+          const elapsed = performance.now() - interaction.downTime;
+          if (moveDist < 12 && elapsed < 350) {
+            voice.pulse = 0.95;
+            voice.shockwaveTime = 1.0;
+            sfx.shockwave();
+            if (tapCallbackRef.current) tapCallbackRef.current();
+          }
+        };
+
+        const handleMouseDown = (e) => onPointerDown(e.clientX, e.clientY);
+        const handleMouseMove = (e) => onPointerMoveCoords(e.clientX, e.clientY);
+        const handleMouseUp = (e) => onPointerUp(e.clientX, e.clientY);
+
+        const handleTouchStart = (e) => {
+          if (e.touches.length === 1) {
+            const t = e.touches[0];
+            onPointerDown(t.clientX, t.clientY);
+          }
+        };
+        const handleTouchMove = (e) => {
+          if (e.touches.length === 1) {
+            const t = e.touches[0];
+            onPointerMoveCoords(t.clientX, t.clientY);
+          }
+        };
+        const handleTouchEnd = (e) => {
+          const t = e.changedTouches[0];
+          if (t) onPointerUp(t.clientX, t.clientY);
+          else interaction.isDragging = false;
+        };
+
+        const domElem = renderer.domElement;
+        domElem.addEventListener("mousedown", handleMouseDown);
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        domElem.addEventListener("touchstart", handleTouchStart, { passive: true });
+        domElem.addEventListener("touchmove", handleTouchMove, { passive: true });
+        domElem.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+        const onResize = () => {
+          if (!container) return;
+          const w = container.clientWidth;
+          const h = container.clientHeight;
+          if (w === 0 || h === 0) return;
+          updateCameraForViewport(w, h);
+          renderer.setSize(w, h);
+        };
+        window.addEventListener("resize", onResize);
+        const resizeObs = new ResizeObserver(onResize);
+        resizeObs.observe(container);
+
+        let frameId;
+        let spin = 0;
+        let prevTime = performance.now() * 0.001;
+        const tempColor = new THREE.Color();
+
+        const animate = () => {
+          const now = performance.now() * 0.001;
+          const dt = Math.min(now - prevTime, 0.05);
+          prevTime = now;
+          const t = now;
+
+          tickVoice(dt, t);
+          const L = voice.level;
+
+          interaction.pointerX += (interaction.targetPointerX - interaction.pointerX) * 0.06;
+          interaction.pointerY += (interaction.targetPointerY - interaction.pointerY) * 0.06;
+
+          if (!interaction.isDragging) {
+            interaction.userRotY += interaction.velY;
+            interaction.userRotX = Math.max(-1.1, Math.min(1.1, interaction.userRotX + interaction.velX));
+            interaction.velY *= 0.94;
+            interaction.velX *= 0.94;
+          }
+
+          spin += dt * (0.14 + L * 1.45);
+          brainGroup.rotation.y = spin + interaction.pointerX * 0.35 + interaction.userRotY;
+          brainGroup.rotation.x =
+            0.25 + Math.sin(t * 0.25) * 0.08 - interaction.pointerY * 0.25 + interaction.userRotX;
+
+          ringsGroup.rotation.y = interaction.userRotY * 0.65 + interaction.pointerX * 0.15;
+          ringsGroup.rotation.x = interaction.userRotX * 0.65 - interaction.pointerY * 0.15;
+
+          for (let i = 0; i < N_NODES; i++) {
+            const bx = base[i * 3];
+            const by = base[i * 3 + 1];
+            const bz = base[i * 3 + 2];
+            const wave = Math.sin(by * 6 + t * 5 + phase[i]) * Math.cos(bx * 5 - t * 3);
+            const r = 1.62 * (1 + wave * L * 0.24 + Math.sin(t + phase[i]) * 0.014);
+            pos[i * 3] = bx * r;
+            pos[i * 3 + 1] = by * r;
+            pos[i * 3 + 2] = bz * r;
+          }
+          ptsGeo.attributes.position.needsUpdate = true;
+
+          const overrideFactor = voice.overrideMode ? 0.55 : 0;
+          for (let p = 0; p < pairs.length; p++) {
+            const i = pairs[p];
+            linePos[p * 3] = pos[i * 3];
+            linePos[p * 3 + 1] = pos[i * 3 + 1];
+            linePos[p * 3 + 2] = pos[i * 3 + 2];
+
+            const fire =
+              Math.pow(Math.max(0, Math.sin(t * 4.2 + phase[i] * 3)), 8) * (L * 2.2) +
+              overrideFactor;
+            tempColor
+              .copy(CYAN_COLOR)
+              .lerp(AMBER_COLOR, Math.min(1, fire))
+              .multiplyScalar(0.38 + L * 0.95 + fire * 0.8);
+
+            lineCol[p * 3] = tempColor.r;
+            lineCol[p * 3 + 1] = tempColor.g;
+            lineCol[p * 3 + 2] = tempColor.b;
+          }
+          linesGeo.attributes.position.needsUpdate = true;
+          linesGeo.attributes.color.needsUpdate = true;
+
+          const coreScale = 0.44 + L * 0.36 + Math.sin(t * 2.2) * 0.025;
+          coreMesh.scale.setScalar(coreScale);
+          coreMesh.rotation.y -= dt * (0.55 + L * 3.2);
+          coreMesh.rotation.z += dt * 0.32;
+          icoMat.color.copy(voice.overrideMode ? AMBER_COLOR : CYAN_COLOR);
+
+          const haloScale = 2.1 + L * 1.4 + Math.sin(t * 4) * 0.12;
+          coreHalo.scale.set(haloScale, haloScale, 1);
+          spriteMat.color.copy(voice.overrideMode ? AMBER_COLOR : CYAN_COLOR);
+
+          if (voice.shockwaveTime > 0.01) {
+            const prog = 1 - voice.shockwaveTime;
+            const sScale = 1 + prog * 8.5;
+            shockRing.scale.setScalar(sScale);
+            shockMat.opacity = voice.shockwaveTime * 0.75;
+            shockMat.color.copy(voice.overrideMode ? AMBER_COLOR : CYAN_COLOR);
+          } else {
+            shockMat.opacity = 0;
+          }
+
+          ringMeshes.forEach(({ mesh, cfg }) => {
+            mesh.rotation.z += dt * cfg.speed * (1 + L * 6.2);
+          });
+
+          dustPoints.rotation.y += dt * (0.012 + L * 0.08);
+
+          renderer.render(scene, camera);
+          frameId = requestAnimationFrame(animate);
+        };
+
+        frameId = requestAnimationFrame(animate);
+
+        return () => {
+          cancelAnimationFrame(frameId);
+          domElem.removeEventListener("mousedown", handleMouseDown);
+          window.removeEventListener("mousemove", handleMouseMove);
+          window.removeEventListener("mouseup", handleMouseUp);
+          domElem.removeEventListener("touchstart", handleTouchStart);
+          domElem.removeEventListener("touchmove", handleTouchMove);
+          domElem.removeEventListener("touchend", handleTouchEnd);
+          window.removeEventListener("resize", onResize);
+          resizeObs.disconnect();
+          renderer.dispose();
+        };
+      }, []);
+
+      return (
+        <div
+          ref={mountRef}
+          className="fixed lg:absolute inset-0 w-full h-full z-10 cursor-grab active:cursor-grabbing"
+          style={{
+            filter: "drop-shadow(0 0 18px rgba(0, 243, 255, 0.35))",
+            touchAction: "none",
+          }}
+        />
+      );
+    }
+
+    // ============================================================================
+    // UI SUB-COMPONENTS
+    // ============================================================================
+    function AnimatedGraph({ color = "#00f3ff", height = 26, speed = 1.2, active = false }) {
+      const pathRef = useRef(null);
+
+      useEffect(() => {
+        let frame;
+        let offset = 0;
+        const ptsCount = 26;
+        const points = Array.from(
+          { length: ptsCount },
+          () => Math.random() * height * 0.75 + height * 0.12
+        );
+
+        const animate = () => {
+          const mult = active ? 1.85 : 1;
+          offset += speed * mult * 0.45;
+          if (offset >= 10) {
+            offset = 0;
+            points.shift();
+            const boost = voice.level * height * 0.35;
+            points.push(
+              Math.min(
+                height - 2,
+                Math.max(3, Math.random() * height * 0.7 + height * 0.12 + boost)
+              )
+            );
+          }
+
+          if (pathRef.current) {
+            const d = points
+              .map((y, i) => `${i === 0 ? "M" : "L"} ${(i * 10 - offset).toFixed(1)} ${(height - y).toFixed(1)}`)
+              .join(" ");
+            pathRef.current.setAttribute("d", d);
+          }
+          frame = requestAnimationFrame(animate);
+        };
+
+        frame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(frame);
+      }, [height, speed, active]);
+
+      return (
+        <svg
+          width="100%"
+          height={height}
+          viewBox={`0 0 230 ${height}`}
+          preserveAspectRatio="none"
+          className="overflow-hidden opacity-90 block"
+        >
+          <path
+            ref={pathRef}
+            fill="none"
+            stroke={color}
+            strokeWidth="1.5"
+            style={{ filter: `drop-shadow(0 0 3px ${color})` }}
+          />
+        </svg>
+      );
+    }
+
+    function HudPanel({ title, code, icon: Icon, children, className = "" }) {
+      return (
+        <section className={`hud-panel ${className}`}>
+          <header className="mb-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.22em] text-[#3ee8ff] border-b border-cyan-500/20 pb-1">
+            <span className="flex items-center gap-1.5 font-semibold">
+              {Icon && <Icon className="w-3 h-3 text-[#00f3ff]" />}
+              {title}
+            </span>
+            {code && <span className="text-cyan-300/60 text-[9px]">{code}</span>}
+          </header>
+          {children}
+        </section>
+      );
+    }
+
+    function TelemetryBar({ label, v, unit = "%", warn = false, forceAmber = false }) {
+      const isHot = forceAmber || (warn && v > 75);
+      return (
+        <div className="mb-1.5">
+          <div className="flex justify-between font-mono text-[10px]">
+            <span className="text-cyan-200/70">{label}</span>
+            <span className={isHot ? "text-[#ffb347] font-bold" : "text-cyan-100"}>
+              {v.toFixed(1)}
+              {unit}
+            </span>
+          </div>
+          <div className="mt-0.5 h-1.5 overflow-hidden bg-cyan-950/70 border border-cyan-500/20">
+            <div
+              className={`h-full transition-all duration-150 ${
+                isHot ? "bg-[#ff8c00] shadow-[0_0_8px_#ff8c00]" : "bg-[#00f3ff] shadow-[0_0_8px_#00f3ff]"
+              }`}
+              style={{ width: `${Math.min(100, Math.max(0, v))}%` }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    function RadialGauge({ v, label, unit = "%" }) {
+      const C = 2 * Math.PI * 28;
+      const isHigh = v > 78;
+      return (
+        <div className="flex flex-col items-center">
+          <div className="relative flex items-center justify-center">
+            <svg viewBox="0 0 68 68" className="h-16 w-16 -rotate-90">
+              <circle cx="34" cy="34" r="28" className="stroke-cyan-950" strokeWidth="4" fill="none" />
+              <circle
+                cx="34"
+                cy="34"
+                r="28"
+                stroke={isHigh ? "#ffb347" : "#00f3ff"}
+                className="transition-all duration-200"
+                strokeWidth="4"
+                fill="none"
+                strokeDasharray={C}
+                strokeDashoffset={C * (1 - Math.min(100, v) / 100)}
+                strokeLinecap="butt"
+                style={{ filter: `drop-shadow(0 0 4px ${isHigh ? "#ffb347" : "#00f3ff"})` }}
+              />
+              <circle
+                cx="34"
+                cy="34"
+                r="22"
+                stroke="rgba(0, 243, 255, 0.3)"
+                strokeWidth="1"
+                fill="none"
+                strokeDasharray="2 3"
+              />
+            </svg>
+            <span className="absolute font-mono text-xs font-bold text-white">
+              {Math.round(v)}
+              <span className="text-[8px] text-cyan-300/70">{unit}</span>
+            </span>
+          </div>
+          <span className="mt-0.5 font-mono text-[9px] uppercase tracking-widest text-cyan-300/70">
+            {label}
+          </span>
+        </div>
+      );
+    }
+
+    function ItalianClock() {
+      const [d, setD] = useState(() => new Date());
+      useEffect(() => {
+        const i = setInterval(() => setD(new Date()), 1000);
+        return () => clearInterval(i);
+      }, []);
+      return (
+        <span>
+          {d.toLocaleTimeString("it-IT")} ·{" "}
+          {d.toLocaleDateString("it-IT", {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      );
+    }
+
+    // ============================================================================
+    // MAIN UNIFIED APPLICATION
+    // ============================================================================
+    function App() {
+      const [active, setActive] = useState(false);
+      const [speaking, setSpeaking] = useState(false);
+      const [muted, setMuted] = useState(false);
+      const [sfxEnabled, setSfxEnabled] = useState(true);
+      const [activeProtocol, setActiveProtocol] = useState(null);
+      const [mobileTab, setMobileTab] = useState("CORE");
+      const [selectedTarget, setSelectedTarget] = useState(RADAR_TARGETS[0]);
+      const [customCmd, setCustomCmd] = useState("");
+      const [briefingList, setBriefingList] = useState(DEFAULT_BRIEFING);
+      const [newsFeed, setNewsFeed] = useState(DEFAULT_NEWS);
+      const [subtitle, setSubtitle] = useState(
+        "Sistema in standby. Premi ATTIVA J.A.R.V.I.S. per ascoltare la Rassegna Stampa con voce ElevenLabs."
+      );
+      const [typedSubtitle, setTypedSubtitle] = useState("");
+      const [agents, setAgents] = useState(INITIAL_AGENTS);
+      const [rightTab, setRightTab] = useState("ALL");
+      const [eventLog, setEventLog] = useState([
+        { time: "SYS.INIT", text: "NEURAL: 520 nodi sinaptici online.", isAlert: false, url: "" },
+        { time: "SYS.SYNC", text: "Connessione a briefing.json e ElevenLabs pronta.", isAlert: false, url: "" },
+      ]);
+
+      const runIdRef = useRef(0);
+      const typewriterRef = useRef(null);
+      const audioPlayerRef = useRef(new Audio());
+
+      const [telemetry, setTelemetry] = useState(() => ({
+        cpu: 24,
+        gpu: 32,
+        ram: 46,
+        vram: 62,
+        net: 94,
+        temp: 42,
+        power: 34,
+        cores: Array.from({ length: 16 }, () => 25),
+        wave: Array.from({ length: 48 }, () => 0.08),
+        hex: "0x88FFA2",
+      }));
+
+      // Carica automaticamente briefing.json generato da Python all'avvio
+      useEffect(() => {
+        fetch("briefing.json?t=" + new Date().getTime())
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (Array.isArray(data) && data.length > 0) {
+              const formatted = data.map((item, idx) => ({
+                testo: item.testo || String(item),
+                url: item.url || "",
+                audio: item.audio || `audio/audio_${idx}.mp3`,
+              }));
+              setBriefingList(formatted);
+              setNewsFeed(formatted.map((f) => f.testo));
             }
-            
-            archiveLog.insertBefore(logItem, archiveLog.children[1]);
-            archiveLog.scrollTop = 0;
+          })
+          .catch(() => {});
+      }, []);
+
+      const activeAgentsCount = useMemo(
+        () => agents.filter((a) => a.active).length,
+        [agents]
+      );
+
+      const cognitiveSegments = useMemo(() => {
+        const base = Math.round((activeAgentsCount / agents.length) * 12);
+        const dynamic = active ? (speaking ? 6 : 3) : 0;
+        const ovr = activeProtocol === "OVR" ? 4 : 0;
+        return Math.min(20, Math.max(2, base + dynamic + ovr));
+      }, [activeAgentsCount, agents.length, active, speaking, activeProtocol]);
+
+      useEffect(() => {
+        const interval = setInterval(
+          () => {
+            const L = voice.level;
+            const m = active || speaking ? 1 : 0.38;
+            const ovrBoost = activeProtocol === "OVR" ? 22 : 0;
+
+            setTelemetry((p) => {
+              const drift = (v, lo, hi) =>
+                Math.max(
+                  4,
+                  Math.min(
+                    99,
+                    v + (lo + (hi - lo) * m + ovrBoost + rnd(-11, 11) * m - v) * 0.32
+                  )
+                );
+              return {
+                cpu: drift(p.cpu, 18, 86),
+                gpu: drift(p.gpu, 24, 95),
+                ram: drift(p.ram, 42, 76),
+                vram: drift(p.vram, 38, 88),
+                net: drift(p.net, 72, 99),
+                temp: drift(p.temp, 39, 76),
+                power: drift(p.power, 28, 94),
+                cores: p.cores.map((c) => drift(c, 8, 96)),
+                wave: [
+                  ...p.wave.slice(1),
+                  Math.min(1, L * rnd(0.65, 1.45) + (speaking ? 0.18 : 0.04)),
+                ],
+                hex:
+                  "0x" +
+                  Math.floor(Math.random() * 0xffffff)
+                    .toString(16)
+                    .toUpperCase()
+                    .padStart(6, "0"),
+              };
+            });
+          },
+          active || speaking ? 100 : 450
+        );
+        return () => clearInterval(interval);
+      }, [active, speaking, activeProtocol]);
+
+      useEffect(() => {
+        if (typewriterRef.current) clearInterval(typewriterRef.current);
+        let idx = 0;
+        setTypedSubtitle("");
+        typewriterRef.current = setInterval(() => {
+          idx++;
+          setTypedSubtitle(subtitle.slice(0, idx));
+          if (idx >= subtitle.length) {
+            clearInterval(typewriterRef.current);
+          }
+        }, 16);
+        return () => {
+          if (typewriterRef.current) clearInterval(typewriterRef.current);
+        };
+      }, [subtitle]);
+
+      useEffect(() => {
+        return () => {
+          window.speechSynthesis?.cancel();
+          audioPlayerRef.current.pause();
+        };
+      }, []);
+
+      const pushLog = useCallback((text, isAlert = false, url = "") => {
+        const now = new Date().toLocaleTimeString("it-IT");
+        setEventLog((prev) => [{ time: now, text, isAlert, url }, ...prev.slice(0, 34)]);
+      }, []);
+
+      // Sintesi vocale del browser (usata per i pulsanti rapidi o come fallback)
+      const speakItalian = useCallback(
+        (text) =>
+          new Promise((resolve) => {
+            const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+            const estDuration = Math.min(4200, 1100 + text.length * 36);
+
+            const fallbackPulseTimer = setInterval(() => {
+              voice.pulse = Math.max(voice.pulse, 0.36);
+            }, 170);
+
+            let settled = false;
+            const finish = () => {
+              if (!settled) {
+                settled = true;
+                clearInterval(fallbackPulseTimer);
+                resolve();
+              }
+            };
+
+            if (!synth || muted) {
+              setTimeout(finish, estDuration);
+              return;
+            }
+
+            try {
+              synth.cancel();
+              const u = new SpeechSynthesisUtterance(text);
+              u.lang = "it-IT";
+              u.rate = 1.04;
+              u.pitch = 0.86;
+              const voices = synth.getVoices();
+              const itVoice =
+                voices.find((v) => v.lang.startsWith("it") && v.name.toLowerCase().includes("google")) ||
+                voices.find((v) => v.lang.startsWith("it"));
+              if (itVoice) u.voice = itVoice;
+
+              u.onboundary = () => {
+                voice.pulse = 0.45;
+              };
+              u.onend = finish;
+              u.onerror = finish;
+
+              synth.speak(u);
+              setTimeout(finish, estDuration + 1200);
+            } catch {
+              setTimeout(finish, estDuration);
+            }
+          }),
+        [muted]
+      );
+
+      // Riproduce i file MP3 di ElevenLabs generati da Python (con fallback a speakItalian)
+      const playElevenLabsOrSpeak = useCallback(
+        (testo, fileAudio) =>
+          new Promise((resolve) => {
+            if (muted) {
+              setTimeout(resolve, 1500);
+              return;
+            }
+            if (!fileAudio) {
+              speakItalian(testo).then(resolve);
+              return;
+            }
+
+            const player = audioPlayerRef.current;
+            player.pause();
+            player.src = fileAudio + "?t=" + new Date().getTime();
+
+            const pulseTimer = setInterval(() => {
+              voice.pulse = Math.max(voice.pulse, 0.48);
+            }, 140);
+
+            const cleanup = () => {
+              clearInterval(pulseTimer);
+              player.onended = null;
+              player.onerror = null;
+            };
+
+            player.onended = () => {
+              cleanup();
+              resolve();
+            };
+
+            player.onerror = () => {
+              cleanup();
+              speakItalian(testo).then(resolve);
+            };
+
+            player.play().catch(() => {
+              cleanup();
+              speakItalian(testo).then(resolve);
+            });
+          }),
+        [muted, speakItalian]
+      );
+
+      const triggerSingleResponse = useCallback(
+        async (speechText, logText, isAlert = false, boost = 0.5) => {
+          const id = ++runIdRef.current;
+          window.speechSynthesis?.cancel();
+          audioPlayerRef.current.pause();
+
+          voice.active = true;
+          voice.speaking = true;
+          voice.protocolBoost = boost;
+          setActive(true);
+          setSpeaking(true);
+          setSubtitle(speechText);
+          if (logText) pushLog(logText, isAlert);
+
+          await speakItalian(speechText);
+
+          if (runIdRef.current !== id) return;
+          voice.speaking = false;
+          setSpeaking(false);
+        },
+        [pushLog, speakItalian]
+      );
+
+      const handleSphereTap = useCallback(() => {
+        pushLog("IMPULSO SINAPTICO: Onda d'urto neurale generata manualmente.", false);
+        if (!speaking) {
+          setSubtitle("Impulso sinaptico ricevuto. Risonanza armonica dei 520 nodi al 100%.");
         }
-    });
-    </script>
+      }, [pushLog, speaking]);
+
+      // Avvia la Rassegna Stampa dal file briefing.json + voce ElevenLabs
+      const toggleBriefing = async () => {
+        sfx.protocol(false);
+        const id = ++runIdRef.current;
+        if (active && speaking) {
+          window.speechSynthesis?.cancel();
+          audioPlayerRef.current.pause();
+          voice.active = false;
+          voice.speaking = false;
+          voice.overrideMode = false;
+          setActive(false);
+          setSpeaking(false);
+          setActiveProtocol(null);
+          setSubtitle("Trasmissione interrotta. J.A.R.V.I.S. in modalità standby.");
+          pushLog("SISTEMA: Sequenza briefing interrotta dall'utente.", false);
+          return;
+        }
+
+        voice.active = true;
+        setActive(true);
+        pushLog("BRIEFING: Scaricamento rassegna stampa e audio ElevenLabs...", false);
+        window.speechSynthesis?.cancel();
+        audioPlayerRef.current.pause();
+
+        let items = briefingList;
+        try {
+          const res = await fetch("briefing.json?t=" + new Date().getTime());
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              items = data.map((item, idx) => ({
+                testo: item.testo || String(item),
+                url: item.url || "",
+                audio: item.audio || `audio/audio_${idx}.mp3`,
+              }));
+              setBriefingList(items);
+              setNewsFeed(items.map((f) => f.testo));
+            }
+          }
+        } catch (e) {
+          console.error("Errore fetch briefing.json:", e);
+        }
+
+        for (let i = 0; i < items.length; i++) {
+          if (runIdRef.current !== id) return;
+          const { testo, url, audio } = items[i];
+          setSubtitle(testo);
+          voice.speaking = true;
+          setSpeaking(true);
+
+          await playElevenLabsOrSpeak(testo, audio);
+          if (runIdRef.current !== id) return;
+
+          voice.speaking = false;
+          setSpeaking(false);
+          pushLog(`RASSEGNA › ${testo}`, false, url);
+          await new Promise((r) => setTimeout(r, 350));
+        }
+
+        if (runIdRef.current === id) {
+          setSubtitle("Rassegna stampa completata. Clicca sulle notizie nel Registro a destra per aprire gli articoli.");
+        }
+      };
+
+      const handleProtocolClick = (code) => {
+        const proto = PROTOCOLS[code];
+        if (!proto) return;
+
+        const isTogglingOffOvr = code === "OVR" && activeProtocol === "OVR";
+        if (isTogglingOffOvr) {
+          sfx.click(880);
+          voice.overrideMode = false;
+          setActiveProtocol(null);
+          triggerSingleResponse(
+            "Override disattivato. Parametri sinaptici riportati al livello nominale.",
+            "PROTOCOLLO OVR: Ritorno alla modalità operativa standard.",
+            false,
+            0.3
+          );
+          return;
+        }
+
+        if (code === "SCAN") sfx.radarPing();
+        else sfx.protocol(code === "OVR");
+
+        setActiveProtocol(code);
+        voice.overrideMode = code === "OVR";
+        triggerSingleResponse(
+          proto.speech,
+          proto.log,
+          code === "OVR" || code === "SEC",
+          proto.boost
+        );
+      };
+
+      const handleToggleAgent = (agentId) => {
+        sfx.click(1480);
+        setAgents((prev) =>
+          prev.map((a) => {
+            if (a.id !== agentId) return a;
+            const nextActive = !a.active;
+            const msg = nextActive
+              ? `Agente ${a.name} attivato. Allineamento sinaptico verificato.`
+              : `Agente ${a.name} posto in modalità standby.`;
+            const logMsg = `AGENT.${a.name}: ${
+              nextActive ? "SYS.ALIGNMENT.VERIFIED (ONLINE)" : "DISCONNECTED (STANDBY)"
+            }`;
+            setTimeout(() => {
+              triggerSingleResponse(msg, logMsg, !nextActive, 0.35);
+            }, 0);
+            return { ...a, active: nextActive };
+          })
+        );
+      };
+
+      const handleSelectRadarTarget = (target) => {
+        sfx.radarPing();
+        setSelectedTarget(target);
+        triggerSingleResponse(
+          target.speech,
+          `RADAR LOCK [${target.id}]: Settore ${target.sector} · Altitudine ${target.alt}`,
+          target.id === "DRN-2",
+          0.55
+        );
+      };
+
+      const handleCommandSubmit = (e) => {
+        e.preventDefault();
+        const q = customCmd.trim();
+        if (!q) return;
+        sfx.click(1600);
+        setCustomCmd("");
+
+        const low = q.toLowerCase();
+        let reply = `Comando ricevuto: "${q}". Elaborazione euristica completata sui 520 nodi neurali. Parametri nominali.`;
+        let isAlert = false;
+
+        if (low.includes("reattore") || low.includes("ark") || low.includes("energia")) {
+          reply = "Reattore Ark stabile a 3,2 Gigajoule al secondo. Temperatura del nucleo a 41 gradi Celsius.";
+        } else if (low.includes("notizi") || low.includes("rassegna") || low.includes("briefing")) {
+          toggleBriefing();
+          return;
+        } else if (low.includes("sicurezza") || low.includes("minacc") || low.includes("scud")) {
+          reply = "Scudi perimetrali e firewall quantistici al 100%. Nessuna intrusione rilevata nel raggio di 360 gradi.";
+        } else if (low.includes("override") || low.includes("massim") || low.includes("potenza")) {
+          setActiveProtocol("OVR");
+          voice.overrideMode = true;
+          isAlert = true;
+          reply = "Protocollo Override attivato su richiesta vocale. Potenza reattore Ark convogliata alla matrice sinaptica.";
+        }
+
+        triggerSingleResponse(reply, `COMANDO UTENTE › "${q.toUpperCase()}"`, isAlert, 0.6);
+      };
+
+      const toggleMute = () => {
+        sfx.click(960);
+        setMuted((prev) => {
+          const next = !prev;
+          voice.muted = next;
+          if (next) {
+            window.speechSynthesis?.cancel();
+            audioPlayerRef.current.pause();
+          }
+          return next;
+        });
+      };
+
+      const toggleSfx = () => {
+        setSfxEnabled((prev) => {
+          const next = !prev;
+          sfx.enabled = next;
+          if (next) sfx.click(1500);
+          return next;
+        });
+      };
+
+      const handleMobileTabChange = (tabId) => {
+        sfx.click(1240);
+        setMobileTab(tabId);
+      };
+
+      const renderSystemTelemetryPanels = () => (
+        <>
+          <HudPanel title="System Status & Threads" code="SYS-01" icon={Activity}>
+            <div className="mb-2.5 bg-[#03070c]/70 p-2 border border-cyan-500/20">
+              <div className="flex justify-between text-[8px] text-cyan-400/70 mb-1">
+                <span>CPU THREAD STREAM (3× REALTIME)</span>
+                <span className="text-[#00f3ff]">SYNC 98.4%</span>
+              </div>
+              <AnimatedGraph color="#00f3ff" speed={1.5} height={22} active={speaking || active} />
+              <AnimatedGraph color="#0088ff" speed={1.0} height={20} active={speaking || active} />
+              <AnimatedGraph
+                color={activeProtocol === "OVR" ? "#ff8c00" : "#3ee8ff"}
+                speed={1.9}
+                height={16}
+                active={speaking || active}
+              />
+            </div>
+
+            <TelemetryBar
+              label="CPU · QUANTUM CORES"
+              v={telemetry.cpu}
+              warn
+              forceAmber={activeProtocol === "OVR"}
+            />
+            <TelemetryBar label="GPU · RTX-Q NEURAL" v={telemetry.gpu} warn />
+            <TelemetryBar label="RAM · 128GB HBM3" v={telemetry.ram} />
+            <TelemetryBar
+              label="VRAM ALLOCATION"
+              v={telemetry.vram}
+              warn
+              forceAmber={telemetry.vram > 60}
+            />
+            <TelemetryBar label="NETWORK UPLINK" v={telemetry.net} unit=" Gb/s" />
+          </HudPanel>
+
+          <HudPanel title="Core Matrix & Cognizione" code="16× CORES" icon={Cpu}>
+            <div className="flex h-12 items-end gap-[3px] bg-[#03070c]/60 p-1.5 border border-cyan-500/20">
+              {telemetry.cores.map((c, i) => {
+                const isHigh = c > 80 || activeProtocol === "OVR";
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 transition-all duration-150 ${
+                      isHigh
+                        ? "bg-[#ffb347] shadow-[0_0_6px_#ff8c00]"
+                        : "bg-[#00f3ff]/80 shadow-[0_0_4px_#00f3ff]"
+                    }`}
+                    style={{ height: `${Math.max(8, c)}%` }}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="mt-2.5">
+              <div className="flex justify-between text-[9px] text-cyan-300/80 mb-1">
+                <span>COGNITIVE LOAD</span>
+                <span className="text-[#00f3ff]">{Math.round((cognitiveSegments / 20) * 100)}%</span>
+              </div>
+              <div className="flex gap-1">
+                {Array.from({ length: 20 }).map((_, i) => {
+                  const lit = i < cognitiveSegments;
+                  const warnSeg = i >= 15;
+                  return (
+                    <div
+                      key={i}
+                      className={`h-2.5 flex-1 transition-colors duration-200 ${
+                        lit
+                          ? warnSeg
+                            ? "bg-[#ff8c00] shadow-[0_0_5px_#ff8c00]"
+                            : "bg-[#00f3ff] shadow-[0_0_4px_#00f3ff]"
+                          : "bg-cyan-950/70"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </HudPanel>
+
+          <HudPanel title="Termico & Reattore Ark" code={telemetry.hex} icon={Zap}>
+            <div className="grid grid-cols-2 gap-2 items-center">
+              <RadialGauge v={telemetry.temp} label="Temp Core" unit="°C" />
+              <RadialGauge v={telemetry.power} label="Ark Output" unit="%" />
+            </div>
+          </HudPanel>
+        </>
+      );
+
+      const renderAgentsPanel = (extraClass = "flex-1 flex flex-col min-h-[165px]") => (
+        <HudPanel
+          title="Agenti Neurali"
+          code={`${activeAgentsCount}/${agents.length} ACTIVE`}
+          icon={Layers}
+          className={extraClass}
+        >
+          <div className="space-y-1.5 overflow-y-auto pr-1 flex-1">
+            {agents.map((ag) => {
+              const IconComp = ag.icon;
+              return (
+                <div
+                  key={ag.id}
+                  onClick={() => handleToggleAgent(ag.id)}
+                  className={`flex items-center justify-between border-l-2 pl-2.5 pr-2.5 py-1.5 transition-all cursor-pointer group ${
+                    ag.active
+                      ? "border-[#00f3ff] bg-cyan-950/40 hover:bg-cyan-900/50"
+                      : "border-cyan-800/40 bg-black/20 opacity-60 hover:opacity-90"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <IconComp
+                      className={`w-4 h-4 ${ag.active ? "text-[#00f3ff]" : "text-cyan-600"}`}
+                    />
+                    <div className="flex flex-col">
+                      <span
+                        className={`text-[10px] font-bold tracking-wider ${
+                          ag.active ? "text-white text-glow" : "text-cyan-500"
+                        }`}
+                      >
+                        {ag.name}
+                      </span>
+                      <span className="text-[8px] text-cyan-400/60">
+                        {ag.active ? `SYS.ALIGNMENT.VERIFIED · ${ag.role}` : "STANDBY · OFFLINE"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`text-[8px] px-1.5 py-0.5 border font-bold ${
+                      ag.active
+                        ? "border-cyan-400/60 text-[#00f3ff] bg-cyan-500/10"
+                        : "border-cyan-900 text-cyan-700"
+                    }`}
+                  >
+                    {ag.active ? "ON" : "OFF"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </HudPanel>
+      );
+
+      const renderRadarAndLogsPanels = () => (
+        <>
+          <HudPanel
+            title="Radar Perimetrale (Tocca Bersagli)"
+            code={activeProtocol === "SCAN" ? "SCAN HIGH-FREQ" : "R-360"}
+            icon={Compass}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative mx-auto h-28 w-28 shrink-0 overflow-hidden rounded-full border border-cyan-400/50 bg-[#02060a]">
+                <div className="absolute inset-3 rounded-full border border-cyan-400/25 pointer-events-none" />
+                <div className="absolute inset-7 rounded-full border border-cyan-400/20 pointer-events-none" />
+                <div className="absolute inset-x-0 top-1/2 h-[1px] bg-cyan-500/25 pointer-events-none" />
+                <div className="absolute inset-y-0 left-1/2 w-[1px] bg-cyan-500/25 pointer-events-none" />
+                <div
+                  className={`hud-sweep absolute inset-0 pointer-events-none ${
+                    active || activeProtocol === "SCAN" ? "hud-sweep-fast" : ""
+                  }`}
+                />
+                {RADAR_TARGETS.map((t) => {
+                  const isLocked = selectedTarget?.id === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => handleSelectRadarTarget(t)}
+                      style={{ left: `${t.x}%`, top: `${t.y}%` }}
+                      className="absolute -translate-x-1/2 -translate-y-1/2 p-2 cursor-pointer group focus:outline-none"
+                    >
+                      <span
+                        className={`block h-2 w-2 rounded-full transition-transform ${
+                          isLocked
+                            ? "bg-[#00f3ff] scale-125 shadow-[0_0_10px_#00f3ff]"
+                            : "bg-[#ffb347] shadow-[0_0_6px_#ffb347]"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex-1 space-y-1 text-[9px] font-mono text-cyan-300/80">
+                <div className="text-[10px] font-bold text-white border-b border-cyan-500/20 pb-0.5 flex justify-between">
+                  <span>TARGET: {selectedTarget.id}</span>
+                  <span className="text-[#ffb347]">{selectedTarget.status}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-cyan-400/70">SETTORE:</span>
+                  <span className="text-[#00f3ff]">{selectedTarget.sector}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-cyan-400/70">QUOTA:</span>
+                  <span className="text-white">{selectedTarget.alt}</span>
+                </div>
+                <button
+                  onClick={() => handleProtocolClick("SCAN")}
+                  className="mt-1 w-full py-1 border border-cyan-500/40 bg-cyan-950/50 hover:bg-cyan-500 hover:text-black transition-colors text-[8px] font-bold tracking-widest cursor-pointer"
+                >
+                  ESEGUI SWEEP R-360
+                </button>
+              </div>
+            </div>
+          </HudPanel>
+
+          <HudPanel title="Feed Notizie Live" code="BRIEFING STREAM" icon={Radio}>
+            <div className="h-24 overflow-hidden relative bg-[#03070c]/50 p-1.5 border border-cyan-500/15">
+              <div className={`hud-ticker space-y-1.5 ${active || speaking ? "hud-ticker-fast" : ""}`}>
+                {[...newsFeed, ...newsFeed].map((n, i) => (
+                  <div
+                    key={i}
+                    onClick={() =>
+                      triggerSingleResponse(n, `FEED NOTIZIE › ${n}`, false, 0.35)
+                    }
+                    className="border-l-2 border-[#00f3ff]/60 pl-2 font-mono text-[10px] text-cyan-200/80 flex items-center gap-1.5 cursor-pointer hover:text-white"
+                  >
+                    <span className="text-[#00f3ff] font-bold">LIVE</span>
+                    <span className="truncate">{n}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </HudPanel>
+
+          <HudPanel
+            title="Archivio Notizie & Registro"
+            code={`${eventLog.length} EVENTI`}
+            icon={Terminal}
+            className="flex-1 flex flex-col min-h-[210px]"
+          >
+            <div className="flex gap-1 mb-2">
+              {[
+                { id: "ALL", label: "TUTTI" },
+                { id: "LOG", label: `NOTIZIE (${eventLog.length})` },
+                { id: "PROC", label: "PROCESSI" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    sfx.click(1380);
+                    setRightTab(t.id);
+                  }}
+                  className={`flex-1 py-1 text-[8px] font-bold border transition-colors cursor-pointer ${
+                    rightTab === t.id
+                      ? "border-[#00f3ff] bg-[#00f3ff] text-black"
+                      : "border-cyan-500/30 bg-cyan-950/30 text-cyan-300/70 hover:border-cyan-400"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 max-h-[260px] lg:max-h-none">
+              {(rightTab === "ALL" || rightTab === "LOG") && (
+                <div className="space-y-1 mb-2">
+                  {eventLog.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-1.5 border-l-2 text-[9px] font-mono bg-black/40 ${
+                        item.isAlert
+                          ? "border-[#ff8c00] text-[#ffb347]"
+                          : "border-[#00f3ff] text-cyan-200/90"
+                      }`}
+                    >
+                      <span className="opacity-60 mr-1.5">[{item.time}]</span>
+                      {item.url ? (
+                        <a
+                          href={item.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-white cursor-pointer"
+                        >
+                          {item.text} ↗
+                        </a>
+                      ) : (
+                        <span>{item.text}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(rightTab === "ALL" || rightTab === "PROC") &&
+                INITIAL_DIAG_BLOCKS.map((blk) => (
+                  <div
+                    key={blk.id}
+                    onClick={() => {
+                      sfx.click(blk.isOrange ? 720 : 1280);
+                      triggerSingleResponse(blk.speech, `${blk.title}: ${blk.desc}`, blk.isOrange, 0.4);
+                    }}
+                    className={`p-2 transition-all cursor-pointer hover:brightness-125 ${
+                      blk.isOrange
+                        ? "orange-border text-[#ffb347]"
+                        : "border border-cyan-500/30 bg-black/40 text-cyan-300 hover:border-cyan-400"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[9px] font-bold mb-0.5">
+                      <span className="flex items-center gap-1">
+                        {blk.isOrange ? (
+                          <AlertTriangle className="w-3 h-3 text-[#ff8c00]" />
+                        ) : (
+                          <CheckCircle2 className="w-3 h-3 text-[#00f3ff]" />
+                        )}
+                        {blk.title}
+                      </span>
+                      <span className="text-[7px] opacity-60">ESEGUI ›</span>
+                    </div>
+                    <div className="text-[8px] opacity-80 leading-tight">{blk.desc}</div>
+                  </div>
+                ))}
+            </div>
+          </HudPanel>
+        </>
+      );
+
+      return (
+        <div className="hud-root relative h-[100dvh] w-screen overflow-hidden select-none text-[#e2f8ff] flex flex-col">
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap');
+
+            .hud-root {
+              background:
+                radial-gradient(circle at 50% 45%, rgba(0, 180, 216, 0.2), transparent 60%),
+                radial-gradient(circle at 50% 50%, rgba(0, 243, 255, 0.08), transparent 75%),
+                #05090f;
+              font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
+              letter-spacing: 0.04em;
+            }
+            .font-display-jarvis { font-family: 'Chakra Petch', sans-serif; }
+            .hud-grid {
+              background-image:
+                linear-gradient(rgba(0, 243, 255, 0.065) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.065) 1px, transparent 1px);
+              background-size: 46px 46px;
+              mask-image: radial-gradient(circle at center, black 32%, transparent 82%);
+              -webkit-mask-image: radial-gradient(circle at center, black 32%, transparent 82%);
+            }
+            .hud-scan {
+              background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.18) 0px,
+                rgba(0, 0, 0, 0.18) 1px,
+                transparent 1px,
+                transparent 3px
+              );
+            }
+            .hud-panel {
+              position: relative;
+              padding: 0.6rem 0.75rem;
+              background: rgba(6, 22, 34, 0.68);
+              border: 1px solid rgba(0, 243, 255, 0.28);
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+              clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+              box-shadow: inset 0 0 18px rgba(0, 243, 255, 0.05);
+            }
+            .hud-panel::before {
+              content: "";
+              position: absolute;
+              left: 0; top: 0; width: 26px; height: 2px;
+              background: #00f3ff;
+              box-shadow: 0 0 8px #00f3ff;
+            }
+            .hud-panel::after {
+              content: "";
+              position: absolute;
+              right: 0; bottom: 0; width: 10px; height: 2px;
+              background: #00f3ff;
+            }
+            .orange-border {
+              border: 1px solid rgba(255, 140, 0, 0.75);
+              box-shadow: inset 0 0 12px rgba(255, 140, 0, 0.14);
+              background: rgba(40, 18, 4, 0.48);
+            }
+            .hud-button {
+              font-family: 'Chakra Petch', sans-serif;
+              text-transform: uppercase;
+              letter-spacing: 0.2em;
+              font-size: 0.72rem;
+              font-weight: 700;
+              padding: 0.55rem 1.25rem;
+              border: 1px solid #00f3ff;
+              color: #00f3ff;
+              background: rgba(0, 243, 255, 0.12);
+              transition: all 0.2s ease;
+              clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+              cursor: pointer;
+            }
+            .hud-button:hover {
+              background: #00f3ff;
+              color: #05090f;
+              box-shadow: 0 0 22px rgba(0, 243, 255, 0.75);
+            }
+            .hud-button-active {
+              border-color: #ffb347;
+              color: #ffb347;
+              background: rgba(255, 179, 71, 0.16);
+              box-shadow: 0 0 16px rgba(255, 140, 0, 0.35);
+            }
+            .bracket {
+              position: absolute;
+              width: 22px; height: 22px;
+              border: 2px solid rgba(0, 243, 255, 0.45);
+              pointer-events: none;
+            }
+            .b-tl { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+            .b-tr { top: 8px; right: 8px; border-left: none; border-bottom: none; }
+            .b-bl { bottom: 8px; left: 8px; border-right: none; border-top: none; }
+            .b-br { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+            .text-glow { text-shadow: 0 0 8px currentColor; }
+            .hud-sweep {
+              background: conic-gradient(from 0deg, rgba(0, 243, 255, 0.55), transparent 28%);
+              animation: hudSpin 4s linear infinite;
+            }
+            .hud-sweep-fast {
+              animation-duration: 1.15s;
+              background: conic-gradient(from 0deg, rgba(255, 179, 71, 0.65), rgba(0, 243, 255, 0.35) 15%, transparent 32%);
+            }
+            .hud-ticker { animation: hudScroll 26s linear infinite; }
+            .hud-ticker-fast { animation-duration: 9s; }
+            @keyframes hudSpin { to { transform: rotate(360deg); } }
+            @keyframes hudScroll { 0% { transform: translateY(0%); } 100% { transform: translateY(-50%); } }
+            ::-webkit-scrollbar { width: 3px; height: 3px; }
+            ::-webkit-scrollbar-track { background: rgba(0, 243, 255, 0.04); }
+            ::-webkit-scrollbar-thumb { background: rgba(0, 243, 255, 0.45); }
+          `}</style>
+
+          <div className="hud-grid pointer-events-none fixed inset-0 z-0" />
+          <NeuralSphereCanvas onSphereTap={handleSphereTap} />
+          <div className="hud-scan pointer-events-none fixed inset-0 z-40" />
+
+          {/* TOP HEADER */}
+          <header className="relative z-30 flex items-center justify-between px-3 sm:px-4 py-2 border-b border-cyan-500/25 bg-[#05090f]/80 backdrop-blur-md shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="h-2.5 w-2.5 rounded-full bg-[#00f3ff] shadow-[0_0_10px_#00f3ff] animate-pulse" />
+              <div>
+                <div className="font-display-jarvis text-sm sm:text-lg font-bold tracking-[0.35em] sm:tracking-[0.45em] text-white text-glow">
+                  J·A·R·V·I·S
+                </div>
+                <div className="hidden sm:block text-[8px] tracking-[0.28em] text-cyan-400/70">
+                  QUANTUM HEURISTIC PROCESSOR · NEURAL NET V9.1
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-3 text-[11px] text-cyan-300/80">
+              <span className="px-2.5 py-0.5 border border-cyan-500/30 bg-cyan-950/40">
+                <ItalianClock />
+              </span>
+              <span className="text-cyan-400/60 font-mono">
+                HASH: <strong className="text-[#00f3ff]">{telemetry.hex}</strong>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={toggleSfx}
+                className={`px-2 py-1 border text-[9px] sm:text-[10px] flex items-center gap-1 transition-all cursor-pointer ${
+                  sfxEnabled
+                    ? "border-cyan-500/40 bg-cyan-950/40 text-cyan-300"
+                    : "border-cyan-900/50 bg-black/40 text-cyan-600"
+                }`}
+              >
+                {sfxEnabled ? <Bell className="w-3 h-3 text-[#00f3ff]" /> : <BellOff className="w-3 h-3" />}
+                <span className="hidden sm:inline">SFX</span>
+              </button>
+
+              <button
+                onClick={toggleMute}
+                className={`px-2 py-1 border text-[9px] sm:text-[10px] flex items-center gap-1 transition-all cursor-pointer ${
+                  muted
+                    ? "border-orange-500/60 bg-orange-950/40 text-orange-400"
+                    : "border-cyan-500/40 bg-cyan-950/40 text-cyan-300"
+                }`}
+              >
+                {muted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3 text-[#00f3ff]" />}
+                <span className="hidden sm:inline">{muted ? "MUTO" : "VOCE"}</span>
+              </button>
+            </div>
+          </header>
+
+          {/* MAIN WORKSPACE */}
+          <div className="relative z-20 flex-1 grid grid-cols-1 lg:grid-cols-[310px_1fr_310px] gap-2.5 p-2 sm:p-3 min-h-0 overflow-hidden pointer-events-none">
+            <aside className="hidden lg:flex flex-col gap-2.5 min-h-0 overflow-y-auto pr-0.5 pointer-events-auto">
+              {renderSystemTelemetryPanels()}
+              {renderAgentsPanel()}
+            </aside>
+
+            <section className="relative flex flex-col justify-between min-h-0 h-full overflow-hidden">
+              <div
+                className={`relative flex-1 flex flex-col justify-between min-h-0 ${
+                  mobileTab !== "CORE" ? "hidden lg:flex" : "flex"
+                }`}
+              >
+                <div className="bracket b-tl" />
+                <div className="bracket b-tr" />
+                <div className="bracket b-bl" />
+                <div className="bracket b-br" />
+
+                <div className="flex justify-between items-start px-3 sm:px-5 pt-2 sm:pt-3 text-[8px] sm:text-[9px] text-cyan-300/75">
+                  <div className="space-y-0.5 bg-[#05090f]/45 px-2 py-1 border-l border-[#00f3ff]/50">
+                    <div className="text-[#00f3ff] font-bold">520 NODI FIBONACCI · 3D WEBGL</div>
+                    <div className="flex items-center gap-1 text-cyan-200/80">
+                      <Touchpad className="w-2.5 h-2.5 text-[#00f3ff]" />
+                      <span>TRASCINA PER RUOTARE · TOCCA PER IMPULSO</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right space-y-0.5 bg-[#05090f]/45 px-2 py-1 border-r border-[#ffb347]/50">
+                    <div className="text-[#ffb347] font-bold">
+                      ARK: {(3.1 + telemetry.power * 0.004).toFixed(2)} GJ/s
+                    </div>
+                    <div>
+                      PROTOCOLLO: <span className="text-white font-bold">{activeProtocol || "NOMINALE"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {mobileTab !== "CORE" && (
+                <div className="lg:hidden pointer-events-auto flex-1 overflow-y-auto space-y-2.5 pr-0.5 pb-2">
+                  {mobileTab === "SISTEMA" && renderSystemTelemetryPanels()}
+                  {mobileTab === "AGENTI" && renderAgentsPanel("flex flex-col")}
+                  {mobileTab === "RADAR" && renderRadarAndLogsPanels()}
+                </div>
+              )}
+
+              {/* BOTTOM CONSOLE */}
+              <div
+                className={`pointer-events-auto mx-auto w-full max-w-2xl flex flex-col items-center gap-1.5 pt-1 shrink-0 ${
+                  mobileTab !== "CORE" ? "hidden lg:flex" : "flex"
+                }`}
+              >
+                <div className="hud-panel w-full text-center">
+                  <div className="min-h-[2.4rem] flex items-center justify-center px-1">
+                    <p className="font-display-jarvis text-xs sm:text-base font-medium leading-snug text-white text-glow">
+                      {typedSubtitle}
+                      <span className="inline-block ml-1 text-[#00f3ff] animate-pulse">_</span>
+                    </p>
+                  </div>
+
+                  <div className="my-1.5 flex h-6 sm:h-7 items-center justify-center gap-[2px] px-2">
+                    {telemetry.wave.map((w, i) => {
+                      const isAmber = activeProtocol === "OVR" || w > 0.78;
+                      return (
+                        <div
+                          key={i}
+                          className={`w-1 transition-all duration-75 ${
+                            isAmber
+                              ? "bg-[#ffb347] shadow-[0_0_6px_#ff8c00]"
+                              : "bg-[#00f3ff] shadow-[0_0_6px_#00f3ff]"
+                          }`}
+                          style={{ height: `${Math.max(12, Math.min(100, 8 + w * 92))}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1.5 border-t border-cyan-500/20">
+                    <button
+                      onClick={toggleBriefing}
+                      className={`hud-button w-full sm:w-auto flex items-center justify-center gap-2 ${
+                        active && speaking ? "hud-button-active" : ""
+                      }`}
+                    >
+                      {active && speaking ? (
+                        <>
+                          <Square className="w-3.5 h-3.5 fill-current" />
+                          <span>Interrompi</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Attiva J.A.R.V.I.S.</span>
+                        </>
+                      )}
+                    </button>
+
+                    <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5 w-full sm:w-auto">
+                      {Object.keys(PROTOCOLS).map((code) => {
+                        const isSelected = activeProtocol === code;
+                        const isOvr = code === "OVR";
+                        return (
+                          <button
+                            key={code}
+                            onClick={() => handleProtocolClick(code)}
+                            className={`px-2.5 py-1 rounded-full border text-[9px] sm:text-[10px] font-bold tracking-wider transition-all cursor-pointer ${
+                              isSelected
+                                ? isOvr
+                                  ? "border-[#ff8c00] bg-[#ff8c00] text-black"
+                                  : "border-[#00f3ff] bg-[#00f3ff] text-black"
+                                : "border-cyan-500/40 bg-cyan-950/40 text-cyan-300 hover:bg-[#00f3ff] hover:text-black"
+                            }`}
+                          >
+                            {code}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-1.5 border-t border-cyan-500/15 flex flex-col gap-1.5">
+                    <form onSubmit={handleCommandSubmit} className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={customCmd}
+                        onChange={(e) => setCustomCmd(e.target.value)}
+                        placeholder="Invia direttiva o scrivi 'notizie' per avviare la rassegna..."
+                        className="flex-1 bg-[#03070c]/80 border border-cyan-500/35 px-2.5 py-1 text-[10px] sm:text-xs text-white placeholder-cyan-500/50 focus:outline-none focus:border-[#00f3ff]"
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1 bg-cyan-500/20 border border-[#00f3ff] text-[#00f3ff] hover:bg-[#00f3ff] hover:text-black transition-colors text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span className="hidden sm:inline">INVIA</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside className="hidden lg:flex flex-col gap-2.5 min-h-0 overflow-y-auto pl-0.5 pointer-events-auto">
+              {renderRadarAndLogsPanels()}
+            </aside>
+          </div>
+
+          {/* MOBILE BOTTOM NAVIGATION DOCK */}
+          <nav className="lg:hidden relative z-30 grid grid-cols-4 gap-1 px-2 py-1.5 border-t border-cyan-500/30 bg-[#05090f]/95 backdrop-blur-md shrink-0">
+            {[
+              { id: "CORE", label: "CORE 3D", icon: Sparkles, badge: activeProtocol || "LIVE" },
+              { id: "SISTEMA", label: "SISTEMA", icon: Activity, badge: `${Math.round(telemetry.cpu)}%` },
+              { id: "AGENTI", label: "AGENTI", icon: Layers, badge: `${activeAgentsCount}/7` },
+              { id: "RADAR", label: "NOTIZIE & LOG", icon: Compass, badge: `${eventLog.length}` },
+            ].map((tab) => {
+              const IconComp = tab.icon;
+              const isCurrent = mobileTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleMobileTabChange(tab.id)}
+                  className={`flex flex-col items-center justify-center py-1 px-1 border transition-all cursor-pointer ${
+                    isCurrent
+                      ? "border-[#00f3ff] bg-cyan-950/70 text-white"
+                      : "border-cyan-500/20 bg-black/40 text-cyan-400/70"
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <IconComp className={`w-3.5 h-3.5 ${isCurrent ? "text-[#00f3ff]" : ""}`} />
+                    <span className="text-[7px] px-1 bg-cyan-500/15 text-[#00f3ff] border border-cyan-500/30">
+                      {tab.badge}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold tracking-wider mt-0.5">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
 </body>
 </html>
