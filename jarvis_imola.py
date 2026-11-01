@@ -3,11 +3,12 @@ import os
 import feedparser
 import requests
 import time
+import asyncio
+import edge_tts
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from google import genai
 from google.genai import types
-from gtts import gTTS
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC")
@@ -36,7 +37,7 @@ def load_state():
                 return {
                     "seen": set(data.get("seen", [])),
                     "last_daily_report": data.get("last_daily_report", ""),
-                    "daily_log": data.get("daily_log", []) # NUOVO: carica il diario
+                    "daily_log": data.get("daily_log", []) 
                 }
         except Exception as e:
             print(f"Errore lettura file memoria: {e}")
@@ -48,7 +49,7 @@ def save_state(state):
         json.dump({
             "seen": list(state["seen"]),
             "last_daily_report": state["last_daily_report"],
-            "daily_log": state.get("daily_log", []) # NUOVO: salva il diario
+            "daily_log": state.get("daily_log", [])
         }, f, indent=2)
 
 def send_notification(title, message, url=""):
@@ -58,104 +59,48 @@ def send_notification(title, message, url=""):
         "Tags": "racing_car,ticket"
     }
     if url:
-        # CORRETTO: la variabile si chiama 'headers', non 'headers_ntfy'
         headers["Actions"] = f"view, Apri Link, {url}"
     requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=message.encode('utf-8'), headers=headers)
 
 def send_jarvis_voice_ntfy(title, text_message, url=""):
+    """Genera l'audio con Edge TTS e lo invia via ntfy"""
     audio_filename = "jarvis_briefing.mp3"
-    api_key = os.environ.get("ELEVENLABS_API_KEY")
-    voice_id = "uI37iVjOs9xsSHtLUP5f" 
-
-    def usa_piano_b_gtts():
-        print("Avvio Piano B: generazione voce con Google TTS...")
-        try:
-            tts = gTTS(text=text_message, lang='it')
-            tts.save(audio_filename)
-            
-            headers_ntfy = {
-                "Title": title.encode('utf-8'),
-                "Priority": "high",
-                "Tags": "robot,racing_car",
-                "Filename": "Jarvis_Backup.mp3"
-            }
-            if url:
-                headers_ntfy["Actions"] = f"view, Apri Link, {url}"
-
-            with open(audio_filename, "rb") as audio_file:
-                requests.post(
-                    f"https://ntfy.sh/{NTFY_TOPIC}",
-                    data=audio_file,
-                    headers=headers_ntfy
-                )
-            print("Briefing vocale di emergenza inviato con gTTS!")
-        except Exception as e_gtts:
-            print(f"Errore critico anche nel Piano B (gTTS): {e_gtts}")
-
-    # --- INIZIO TENTATIVO CON ELEVENLABS (PIANO A) ---
-    if not api_key:
-        print("Errore: ELEVENLABS_API_KEY non trovata.")
-        usa_piano_b_gtts()
-        return
-
-    url_eleven = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
     
-    headers_eleven = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": api_key
-    }
-    
-    data_eleven = {
-        "text": text_message,
-        "model_id": "eleven_multilingual_v2",
-        "voice_settings": {
-            "stability": 0.65,
-            "similarity_boost": 0.85,
-            "style": 0.0,
-            "use_speaker_boost": True
-        }
-    }
+    async def genera_audio():
+        # Usa la voce neurale di Azure. 'it-IT-DiegoNeural' per voce maschile.
+        voce = "it-IT-DiegoNeural"
+        comunica = edge_tts.Communicate(text_message, voce)
+        await comunica.save(audio_filename)
+
+    print("Generazione audio neurale con Edge TTS in corso...")
     
     try:
-        response = requests.post(url_eleven, json=data_eleven, headers=headers_eleven)
+        # Esegue la funzione asincrona in modo sincrono
+        asyncio.run(genera_audio())
         
-        if response.status_code == 200:
-            with open(audio_filename, "wb") as f:
-                f.write(response.content)
-            
-            headers_ntfy = {
-                "Title": title.encode('utf-8'),
-                "Priority": "high",
-                "Tags": "robot,racing_car",
-                "Filename": "Jarvis_Briefing.mp3"
-            }
-            
-            if url:
-                headers_ntfy["Actions"] = f"view, Apri Link, {url}"
+        headers_ntfy = {
+            "Title": title.encode('utf-8'),
+            "Priority": "high",
+            "Tags": "robot,racing_car",
+            "Filename": "Jarvis_Briefing.mp3"
+        }
+        if url:
+            headers_ntfy["Actions"] = f"view, Apri Link, {url}"
 
-            with open(audio_filename, "rb") as audio_file:
-                requests.post(
-                    f"https://ntfy.sh/{NTFY_TOPIC}",
-                    data=audio_file,
-                    headers=headers_ntfy
-                )
-            print("Briefing vocale stile Jarvis inviato con successo via ElevenLabs!")
-            
-        else:
-            print(f"Errore API ElevenLabs ({response.status_code}): {response.text}")
-            # Se l'API di ElevenLabs risponde con un errore (es. crediti esauriti), scatta il Piano B
-            usa_piano_b_gtts()
-            
+        with open(audio_filename, "rb") as audio_file:
+            requests.post(
+                f"https://ntfy.sh/{NTFY_TOPIC}",
+                data=audio_file,
+                headers=headers_ntfy
+            )
+        print("Briefing vocale inviato con successo via Edge TTS!")
+        
     except Exception as e:
-        print(f"Errore di connessione a ElevenLabs: {e}")
-        # Se c'è un errore di rete o crash, scatta il Piano B
-        usa_piano_b_gtts()
+        print(f"Errore durante la generazione o l'invio dell'audio: {e}")
         
     finally:
         if os.path.exists(audio_filename):
             os.remove(audio_filename)
-
 
 def analyze_with_jarvis_batch(testo_notizie):
     prompt = f"""
@@ -179,7 +124,6 @@ def analyze_with_jarvis_batch(testo_notizie):
     }}
     """
     
-    # Dato che la 3.6 è bloccata per 18 ore, proviamo prima la 3.5-flash-lite
     modelli_da_provare = ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
     
     for nome_modello in modelli_da_provare:
@@ -258,11 +202,6 @@ def check_ticketone_direct():
     return False, ""
 
 def main():
-
-    # --- RIGA DI TEST DA AGGIUNGERE ---
-    #send_notification("Test Jarvis", "Test funzionante", "https://www.ticketone.it/artist/formula-1-imola/")
-    # ----------------------------------
-    
     state = load_state()
     new_seen = set(state["seen"])
     any_new_alert = False
@@ -279,7 +218,7 @@ def main():
         new_seen.add(t1_url)
         any_new_alert = True
 
-    # 2. Controllo Feed RSS con Gemini
+    # 2. Controllo Feed RSS con Jarvis
     print("Controllo Feed RSS con Jarvis...")
     
     time_limit = datetime.now(timezone.utc) - timedelta(days=2)
@@ -289,6 +228,14 @@ def main():
     for rss_url in RSS_URLS:
         feed = feedparser.parse(rss_url)
         for entry in feed.entries[:5]:
+            
+            # --- MODIFICA 1: FILTRO "IMOLA" ---
+            titolo_notizia = entry.get('title', '')
+            riassunto_notizia = entry.get('summary', '')
+            if 'imola' not in titolo_notizia.lower() and 'imola' not in riassunto_notizia.lower():
+                continue
+            # ----------------------------------
+
             article_id = entry.link
             
             # Verifica data
@@ -301,10 +248,10 @@ def main():
                 continue
 
             # Accumula la notizia nel testo per l'API
-            blocco_notizie += f"- Titolo: {entry.title}\n  Dettagli: {entry.get('summary', '')}\n\n"
+            blocco_notizie += f"- Titolo: {titolo_notizia}\n  Dettagli: {riassunto_notizia}\n\n"
             
             # Segna nel diario
-            state["daily_log"].append(f"- {entry.title}")
+            state["daily_log"].append(f"- {titolo_notizia}")
             
             # Salva il primo link utile da mettere nel bottone della notifica
             if not link_riferimento:
@@ -326,7 +273,7 @@ def main():
             any_new_alert = True
             state["daily_log"].append(f"-> [RITENUTA IMPORTANTE: {result.get('short_message')}]")
     else:
-        print("Nessuna nuova notizia da analizzare.")
+        print("Nessuna nuova notizia da analizzare (o filtrata perché non riguardava Imola).")
 
    # 3. Report Periodici (09:30, 15:00, 20:00)
     now_rome = datetime.now(ZoneInfo("Europe/Rome"))
@@ -363,9 +310,7 @@ def main():
         
         state["last_daily_report"] = current_report_id
         state["daily_log"] = []
- 
 
-    # --- QUESTE DUE RIGHE DEVONO RIMANERE ALLA FINE DEL MAIN ---
     state["seen"] = new_seen
     save_state(state)
 
