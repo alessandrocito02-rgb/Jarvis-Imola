@@ -30,10 +30,15 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         run: python jarvis_imola.py
 
-      - name: Salva memoria notizie lette
+      - name: Commit and push changes
         run: |
           git config --global user.name 'Jarvis Bot'
-          git config --global user.email 'jarvis@bot.local'
-          git add seen_articles.json || true
-          git diff --staged --quiet || git commit -m "Aggiorna memoria notizie"
+          git config --global user.email 'bot@example.com' # (o l'email che usi per il bot)
+          git add .
+          git commit -m "Aggiorna memoria notizie" || echo "No changes to commit"
+          
+          # AGGIUNGI QUESTA RIGA PER RISOLVERE IL CONFLITTO:
+          git pull --rebase origin main
+          
+          # LASCIA IL PUSH COME ULTIMO COMANDO:
           git push
