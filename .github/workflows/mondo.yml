@@ -14,11 +14,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install google-genai feedparser requests gtts
+          
+      # MODIFICA QUI: Rimosso gtts e aggiunto edge-tts
+      - run: pip install google-genai feedparser requests edge-tts
+      
       - env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC_MONDO: ${{ secrets.NTFY_TOPIC_MONDO }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          # Puoi anche rimuovere ELEVENLABS_API_KEY dai secrets se non la usi altrove
         run: python jarvis_mondo.py
         
       - name: Salva i dati e gli MP3 per l'interfaccia web
@@ -26,6 +29,6 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add briefing.json audio/
-          git commit -m "Aggiornamento automatico briefing e voce ElevenLabs" || echo "Nessuna modifica"
+          git commit -m "Aggiornamento automatico briefing e voce Edge TTS" || echo "Nessuna modifica"
           git pull origin main --rebase || echo "Nessun conflitto"
           git push origin main
