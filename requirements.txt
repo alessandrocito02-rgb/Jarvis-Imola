@@ -2,3 +2,4 @@ google-genai
 feedparser
 requests
 gTTS
+edge-tts
