@@ -2,56 +2,31 @@ import os
 import json
 import feedparser
 import requests
+import asyncio
+import edge_tts
 from google import genai
 from google.genai import types
-from gtts import gTTS
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC_MONDO") or os.environ.get("NTFY_TOPIC")
-ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY")
-VOICE_ID = "uI37iVjOs9xsSHtLUP5f"
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def genera_file_audio(testo, nome_file):
-    """Genera un MP3 con la tua voce di ElevenLabs (o usa Google TTS di backup)"""
-    if ELEVENLABS_API_KEY:
-        url_eleven = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-        headers_eleven = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": ELEVENLABS_API_KEY
-        }
-        data_eleven = {
-            "text": testo,
-            "model_id": "eleven_multilingual_v2",
-            "voice_settings": {
-                "stability": 0.65,
-                "similarity_boost": 0.85,
-                "style": 0.0,
-                "use_speaker_boost": True
-            }
-        }
-        try:
-            resp = requests.post(url_eleven, json=data_eleven, headers=headers_eleven, timeout=30)
-            if resp.status_code == 200:
-                with open(nome_file, "wb") as f:
-                    f.write(resp.content)
-                print(f"Audio ElevenLabs salvato: {nome_file}")
-                return True
-            else:
-                print(f"Errore ElevenLabs ({resp.status_code}): passo al Piano B (gTTS)")
-        except Exception as e:
-            print(f"Eccezione ElevenLabs: {e}")
-
-    # Piano B automatico se ElevenLabs fallisce o finisce i crediti
+    """Genera un MP3 con la voce neurale di Edge TTS"""
+    async def genera():
+        # Usa la voce neurale italiana maschile
+        voce = "it-IT-DiegoNeural"
+        comunica = edge_tts.Communicate(testo, voce)
+        await comunica.save(nome_file)
+        
     try:
-        tts = gTTS(text=testo, lang='it')
-        tts.save(nome_file)
-        print(f"Audio di backup gTTS salvato: {nome_file}")
+        # Esegue la generazione audio
+        asyncio.run(genera())
+        print(f"Audio Edge TTS salvato: {nome_file}")
         return True
-    except Exception as e_gtts:
-        print(f"Errore generazione audio: {e_gtts}")
+    except Exception as e:
+        print(f"Errore generazione audio Edge TTS: {e}")
         return False
         
 def send_notification(messaggio):
@@ -175,7 +150,7 @@ def main():
         return
 
     # 2. Genera i file audio MP3 dentro la cartella "audio"
-    print("2. Generazione audio ElevenLabs per l'interfaccia web...")
+    print("2. Generazione audio Edge TTS per l'interfaccia web...")
     os.makedirs("audio", exist_ok=True)
     
     for i, item in enumerate(dati["frasi_hud"]):
