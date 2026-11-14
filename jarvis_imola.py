@@ -53,6 +53,7 @@ def save_state(state):
         }, f, indent=2)
 
 def send_notification(title, message, url=""):
+    return
     headers = {
         "Title": title.encode('utf-8'),
         "Priority": "high",
@@ -63,6 +64,7 @@ def send_notification(title, message, url=""):
     requests.post(f"https://ntfy.sh/{NTFY_TOPIC}", data=message.encode('utf-8'), headers=headers)
 
 def send_jarvis_voice_ntfy(title, text_message, url=""):
+    return
     """Genera l'audio con Edge TTS e lo invia via ntfy"""
     audio_filename = "jarvis_briefing.mp3"
     
